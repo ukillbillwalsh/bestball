@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CFB Bestball Draft Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@500;600;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e16; --bg2:#0f1521; --panel:#131b2b; --panel2:#172132;
+    --line:#23304a; --line2:#2e3e5c;
+    --ink:#e8eef7; --muted:#8195b3; --dim:#5d6f8e;
+    --accent:#ff5a1f; --accent2:#ffb01f;
+    --green:#27d796; --green-d:#0e2f24;
+    --red:#ff4d5e; --red-d:#2f1117;
+    --blue:#3d8bff; --purple:#9d6bff;
+    --mono:'IBM Plex Mono',monospace;
+    --disp:'Oswald',sans-serif;
+    --body:'Barlow Condensed',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,90,31,.10), transparent 60%),
+      radial-gradient(900px 500px at 5% 110%, rgba(61,139,255,.08), transparent 55%),
+      var(--bg);
+    min-height:100vh;-webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#fff}
+  ::-webkit-scrollbar{height:9px;width:9px}
+  ::-webkit-scrollbar-track{background:var(--bg2)}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+  header{
+    position:sticky;top:0;z-index:40;
+    background:linear-gradient(180deg,rgba(10,14,22,.97),rgba(10,14,22,.86));
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  }
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;max-width:1500px;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo .mark{
+    width:40px;height:40px;border-radius:10px;
+    background:conic-gradient(from 210deg,var(--accent),var(--accent2),var(--accent));
+    display:grid;place-items:center;font-family:var(--disp);font-weight:700;color:#0a0e16;font-size:20px;
+    box-shadow:0 6px 20px rgba(255,90,31,.35);
+  }
+  .logo h1{font-family:var(--disp);font-weight:700;letter-spacing:.5px;font-size:17px;line-height:1;text-transform:uppercase}
+  .logo h1 span{color:var(--accent)}
+  .logo .sub{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+  .spacer{flex:1}
+  .src{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .src b{color:var(--muted);font-weight:500}
+
+  main{max-width:1500px;margin:0 auto;padding:22px}
+
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px}
+  .filters{display:flex;gap:6px}
+  .chip{
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);font-family:var(--disp);
+    font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:.15s
+  }
+  .chip:hover{border-color:var(--line2);color:var(--ink)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#0a0e16}
+  .search{
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--ink);
+    font-family:var(--body);font-size:15px;width:220px;outline:none
+  }
+  .search:focus{border-color:var(--accent)}
+  .search::placeholder{color:var(--dim)}
+  .reset-btn{background:transparent;border-color:var(--red);color:var(--red)}
+  .reset-btn:hover{background:var(--red-d)}
+
+  .posbadge{display:inline-block;font-family:var(--mono);font-weight:600;font-size:10px;padding:3px 7px;border-radius:5px;letter-spacing:.5px}
+  .pos-QB{background:rgba(61,139,255,.16);color:var(--blue)}
+  .pos-RB{background:rgba(39,215,150,.15);color:var(--green)}
+  .pos-WR{background:rgba(157,107,255,.16);color:var(--purple)}
+  .pos-TE{background:rgba(255,176,31,.16);color:var(--accent2)}
+
+  /* layout */
+  .draftlayout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  .draftmain{min-width:0}
+  .draftside{display:flex;flex-direction:column;gap:14px}
+  .dpanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .dpanel h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:1px;font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .dpanel h3 span{color:var(--accent2);font-family:var(--mono);font-size:13px;background:rgba(255,176,31,.12);padding:2px 8px;border-radius:6px}
+  .dpanel.src-panel{font-family:var(--mono);font-size:10px;color:var(--dim);padding:10px 14px;line-height:1.6}
+  .dnote{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin:-4px 0 10px;line-height:1.5}
+
+  .dtablewrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:78vh}
+  table.dtable{width:100%;border-collapse:collapse;font-size:14px}
+  table.dtable th{background:var(--bg2);text-align:right;font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;user-select:none}
+  table.dtable th:hover{color:var(--muted)}
+  table.dtable th.l{text-align:left}
+  table.dtable th .arr{color:var(--accent);font-size:9px;margin-left:3px}
+  table.dtable td{padding:9px 12px;text-align:right;border-bottom:1px solid rgba(35,48,74,.4);font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.dtable td.l{text-align:left}
+  table.dtable tr{cursor:pointer;transition:background .1s}
+  table.dtable tr:hover td{background:rgba(255,255,255,.03)}
+  table.dtable tr.drafted td{opacity:.35}
+  table.dtable tr.drafted td:nth-child(2){text-decoration:line-through}
+  table.dtable tr.mine{background:rgba(255,90,31,.08)}
+  table.dtable tr.mine:hover td{background:rgba(255,90,31,.13)}
+  table.dtable tr.mine td:nth-child(2)::after{content:" ★";color:var(--accent);font-size:12px}
+  .pname-d{font-family:var(--disp);font-weight:600;font-size:15px}
+  .adp-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
+  .star-btn{background:transparent;border:1px solid var(--line2);color:var(--dim);font-size:14px;padding:3px 8px;border-radius:6px;cursor:pointer;line-height:1;transition:.12s}
+  .star-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .star-btn.on{background:var(--accent);border-color:var(--accent);color:#0a0e16}
+
+  .poscounts{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+  .poscount{background:var(--bg2);border-radius:8px;padding:8px 4px;text-align:center}
+  .poscount .lbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase}
+  .poscount .num{font-family:var(--disp);font-weight:700;font-size:18px;margin-top:2px}
+  .poscount.QB .num{color:var(--blue)}
+  .poscount.RB .num{color:var(--green)}
+  .poscount.WR .num{color:var(--purple)}
+  .poscount.TE .num{color:var(--accent2)}
+  .poscount.TOT .num{color:var(--ink)}
+
+  .rosterlist{display:flex;flex-direction:column;gap:4px;max-height:280px;overflow:auto}
+  .rosterlist .ritem{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 8px;background:var(--bg2);border-radius:6px}
+  .rosterlist .ritem .ri-pos{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 5px;border-radius:4px;letter-spacing:.5px}
+  .rosterlist .ritem .ri-name{flex:1;font-family:var(--disp);font-weight:500}
+  .rosterlist .ritem .ri-team{font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .rosterlist .ritem .ri-bye{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .rosterempty{font-family:var(--mono);font-size:11px;color:var(--dim);padding:12px 4px;text-align:center}
+
+  .stacks{display:flex;flex-direction:column;gap:8px}
+  .stack{background:var(--bg2);border-radius:8px;padding:8px 10px}
+  .stack.qb-stack{box-shadow:inset 3px 0 0 var(--accent)}
+  .stack .stk-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--disp);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+  .stack .stk-tag{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:1px}
+  .stack .stk-players{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;line-height:1.6}
+
+  .byes{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .byecell{background:var(--bg2);border-radius:6px;padding:6px 4px;text-align:center;font-family:var(--mono)}
+  .byecell .wk{font-size:9px;color:var(--dim);letter-spacing:.5px}
+  .byecell .ct{font-size:14px;font-weight:600;color:var(--ink);margin-top:2px}
+  .byecell.warn{background:rgba(255,176,31,.15)}
+  .byecell.warn .ct{color:var(--accent2)}
+  .byecell.danger{background:rgba(255,77,94,.18)}
+  .byecell.danger .ct{color:var(--red)}
+  .byecell.empty .ct{color:var(--dim)}
+
+  .footnote{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
+  .footnote b{color:var(--muted);font-weight:500}
+
+  @media (max-width:900px){
+    .draftlayout{grid-template-columns:1fr}
+    .draftside{order:-1}
+    .rosterlist{max-height:200px}
+    .topbar{padding:12px 16px;gap:10px}
+    main{padding:14px}
+  }
+  @media (max-width:600px){
+    .dtablewrap{max-height:60vh}
+    table.dtable td{padding:10px 8px}
+    .pname-d{font-size:14px}
+    .search{width:140px}
+    .logo h1{font-size:14px}
+    .src{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="logo">
+      <div class="mark">CFB</div>
+      <div>
+        <h1>Bestball <span>Draft</span> Companion</h1>
+        <div class="sub">Underdog ADP · stacks · byes</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="src" id="srcInfo">Loading bestball.json…</div>
+  </div>
+</header>
+
+<main>
+  <div class="draftlayout">
+    <div class="draftmain">
+      <div class="toolbar">
+        <div class="filters" id="dposfilter">
+          <button class="chip on" data-pos="ALL">All</button>
+          <button class="chip" data-pos="QB">QB</button>
+          <button class="chip" data-pos="RB">RB</button>
+          <button class="chip" data-pos="WR">WR</button>
+          <button class="chip" data-pos="TE">TE</button>
+        </div>
+        <input class="search" id="dsearch" placeholder="Search player / team…">
+        <button class="chip on" id="hidedrafted">Hide drafted</button>
+        <button class="chip" id="hideunranked">Hide unranked</button>
+        <div class="spacer"></div>
+        <button class="chip reset-btn" id="resetdraft">Reset draft</button>
+      </div>
+      <div class="dtablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th data-k="adp">ADP</th>
+              <th class="l" data-k="name">Player</th>
+              <th data-k="pos">Pos</th>
+              <th data-k="team">Team</th>
+              <th data-k="proj">Proj</th>
+              <th data-k="bye">Bye</th>
+              <th data-k="myRank">My Rank</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="dbody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">Tap any row to mark a player <b>drafted</b>. Tap the ★ to mark them <b>yours</b>. Draft state persists in your browser — a refresh won't wipe it.</p>
+    </div>
+
+    <aside class="draftside">
+      <div class="dpanel">
+        <h3>My Roster · <span id="rosterCount">0</span></h3>
+        <div class="poscounts" id="poscounts"></div>
+        <div class="rosterlist" id="rosterlist"></div>
+      </div>
+
+      <div class="dpanel">
+        <h3>Stacks</h3>
+        <p class="dnote">QB + pass-catcher pairings, plus any team where you own 2+ skill players.</p>
+        <div class="stacks" id="stacks"></div>
+      </div>
+
+      <div class="dpanel">
+        <h3>Bye Weeks</h3>
+        <p class="dnote">Watch for clusters where multiple starters share a bye.</p>
+        <div class="byes" id="byegrid"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script>
+const DATA_URL = (typeof window!=='undefined' && window.BESTBALL_URL) || './bestball.json';
+const LS_KEY = 'cfb_draft_companion_v1';
+
+let BESTBALL = {players:[], updated:"", count:0};
+let draftState = loadState();
+let sortKey = 'adp', sortDir = 1;
+let posFilter = 'ALL';
+let query = '';
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return {drafted:[], mine:[]};
+    const o = JSON.parse(raw);
+    return {drafted: o.drafted||[], mine: o.mine||[]};
+  }catch(e){ return {drafted:[], mine:[]}; }
+}
+function saveState(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(draftState)); }catch(e){}
+}
+const isDrafted = id => draftState.drafted.includes(id) || draftState.mine.includes(id);
+const isMine    = id => draftState.mine.includes(id);
+
+function toggleDrafted(id){
+  if(isMine(id)){
+    draftState.mine    = draftState.mine.filter(x=>x!==id);
+    draftState.drafted = draftState.drafted.filter(x=>x!==id);
+  } else if(draftState.drafted.includes(id)){
+    draftState.drafted = draftState.drafted.filter(x=>x!==id);
+  } else {
+    draftState.drafted.push(id);
+  }
+  saveState(); render();
+}
+function toggleMine(id){
+  if(isMine(id)){
+    draftState.mine    = draftState.mine.filter(x=>x!==id);
+    draftState.drafted = draftState.drafted.filter(x=>x!==id);
+  } else {
+    if(!draftState.mine.includes(id)) draftState.mine.push(id);
+    draftState.drafted = draftState.drafted.filter(x=>x!==id);
+  }
+  saveState(); render();
+}
+
+function render(){
+  const body = document.getElementById('dbody');
+  const hideDrafted  = document.getElementById('hidedrafted').classList.contains('on');
+  const hideUnranked = document.getElementById('hideunranked').classList.contains('on');
+
+  let rows = BESTBALL.players.filter(p=>{
+    if(posFilter!=='ALL' && p.pos!==posFilter) return false;
+    if(query){
+      const q = query.toLowerCase();
+      const hit = p.name.toLowerCase().includes(q)
+               || (p.team||'').toLowerCase().includes(q)
+               || (p.teamFull||'').toLowerCase().includes(q);
+      if(!hit) return false;
+    }
+    if(hideDrafted && isDrafted(p.id) && !isMine(p.id)) return false;
+    if(hideUnranked && p.adp==null) return false;
+    return true;
+  });
+
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    if(x==null && y==null) return 0;
+    if(x==null) return 1;
+    if(y==null) return -1;
+    if(typeof x==='string') return sortDir*x.localeCompare(y);
+    return sortDir*(x-y);
+  });
+
+  const cap = 500;
+  const shown = rows.slice(0, cap);
+  body.innerHTML = shown.map(p=>{
+    const cls  = isMine(p.id) ? 'mine' : (isDrafted(p.id) ? 'drafted' : '');
+    const star = isMine(p.id) ? 'on' : '';
+    return `<tr class="${cls}" data-id="${p.id}">
+      <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
+      <td class="l"><span class="pname-d">${p.name}</span></td>
+      <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${p.team||'—'}</td>
+      <td class="num">${p.proj==null?'—':p.proj}</td>
+      <td class="num" style="color:var(--muted)">${p.bye==null?'—':'W'+p.bye}</td>
+      <td class="num">${p.myRank==null?'—':p.myRank}</td>
+      <td><button class="star-btn ${star}" data-star="${p.id}" title="Mark as mine">★</button></td>
+    </tr>`;
+  }).join('');
+
+  if(rows.length > shown.length){
+    body.insertAdjacentHTML('beforeend',
+      `<tr><td colspan="8" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${shown.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
+  }
+  renderRoster(); renderStacks(); renderByes();
+}
+
+function renderRoster(){
+  const mine = BESTBALL.players.filter(p=>isMine(p.id));
+  document.getElementById('rosterCount').textContent = mine.length;
+
+  const counts = {QB:0,RB:0,WR:0,TE:0};
+  mine.forEach(p=>{ if(counts[p.pos]!==undefined) counts[p.pos]++; });
+  document.getElementById('poscounts').innerHTML =
+    ['QB','RB','WR','TE'].map(pos=>
+      `<div class="poscount ${pos}"><div class="lbl">${pos}</div><div class="num">${counts[pos]}</div></div>`).join('')
+    + `<div class="poscount TOT"><div class="lbl">Tot</div><div class="num">${mine.length}</div></div>`;
+
+  const sorted = [...mine].sort((a,b)=>{
+    const o = {QB:0,RB:1,WR:2,TE:3};
+    return (o[a.pos]??9) - (o[b.pos]??9) || (a.adp??999) - (b.adp??999);
+  });
+  document.getElementById('rosterlist').innerHTML = sorted.length===0
+    ? `<div class="rosterempty">No picks yet.  Tap the ★ on any player to add them.</div>`
+    : sorted.map(p=>`<div class="ritem">
+        <span class="ri-pos pos-${p.pos}">${p.pos}</span>
+        <span class="ri-name">${p.name}</span>
+        <span class="ri-team">${p.team||''}</span>
+        <span class="ri-bye">${p.bye==null?'':'W'+p.bye}</span>
+      </div>`).join('');
+}
+
+function renderStacks(){
+  const mine = BESTBALL.players.filter(p=>isMine(p.id));
+  const byTeam = {};
+  mine.forEach(p=>{ if(!p.team) return; (byTeam[p.team] = byTeam[p.team]||[]).push(p); });
+  const stacks = Object.entries(byTeam).filter(([_,arr])=>arr.length>=2).sort((a,b)=>b[1].length-a[1].length);
+
+  const el = document.getElementById('stacks');
+  if(stacks.length===0){
+    el.innerHTML = `<div class="rosterempty">No stacks yet.  A stack forms when you own 2+ players from the same team.</div>`;
+    return;
+  }
+  el.innerHTML = stacks.map(([team, arr])=>{
+    const hasQB = arr.some(p=>p.pos==='QB');
+    const hasCatcher = arr.some(p=>['WR','TE','RB'].includes(p.pos));
+    const isQbStack = hasQB && hasCatcher;
+    const tag = isQbStack ? 'QB STACK' : '';
+    const players = arr.sort((a,b)=>({QB:0,RB:1,WR:2,TE:3}[a.pos]??9) - ({QB:0,RB:1,WR:2,TE:3}[b.pos]??9))
+                       .map(p=>`${p.pos} ${p.name}`).join(' · ');
+    return `<div class="stack ${isQbStack?'qb-stack':''}">
+      <div class="stk-head">${team} <span style="color:var(--dim);font-size:11px">${arr.length} picks</span> <span class="stk-tag">${tag}</span></div>
+      <div class="stk-players">${players}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderByes(){
+  const mine = BESTBALL.players.filter(p=>isMine(p.id));
+  const byWeek = {};
+  mine.forEach(p=>{ if(p.bye!=null) byWeek[p.bye] = (byWeek[p.bye]||0)+1; });
+  const weeks = [...Array(14).keys()].map(i=>i+1);
+  document.getElementById('byegrid').innerHTML = weeks.map(w=>{
+    const ct = byWeek[w]||0;
+    const cls = ct>=4 ? 'danger' : ct>=2 ? 'warn' : (ct===0?'empty':'');
+    return `<div class="byecell ${cls}"><div class="wk">W${w}</div><div class="ct">${ct||'—'}</div></div>`;
+  }).join('');
+}
+
+// Click delegation
+document.addEventListener('click', e=>{
+  const star = e.target.closest('[data-star]');
+  if(star){ e.stopPropagation(); toggleMine(star.dataset.star); return; }
+  const row = e.target.closest('#dbody tr[data-id]');
+  if(row){ toggleDrafted(row.dataset.id); }
+});
+
+// Wire controls
+document.querySelectorAll('#dposfilter .chip').forEach(c=>{
+  c.onclick = ()=>{
+    document.querySelectorAll('#dposfilter .chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+    posFilter = c.dataset.pos;
+    render();
+  };
+});
+document.getElementById('dsearch').oninput = e=>{ query = e.target.value; render(); };
+document.getElementById('hidedrafted').onclick  = e=>{ e.currentTarget.classList.toggle('on'); render(); };
+document.getElementById('hideunranked').onclick = e=>{ e.currentTarget.classList.toggle('on'); render(); };
+document.getElementById('resetdraft').onclick = ()=>{
+  if(confirm('Reset the draft?  All "drafted" and "mine" markers will be cleared.')){
+    draftState = {drafted:[], mine:[]}; saveState(); render();
+  }
+};
+document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
+  th.onclick = ()=>{
+    const k = th.dataset.k;
+    if(sortKey===k) sortDir *= -1;
+    else { sortKey = k; sortDir = 1; }
+    document.querySelectorAll('.dtable thead th .arr').forEach(a=>a.remove());
+    th.insertAdjacentHTML('beforeend', `<span class="arr">${sortDir<0?'▼':'▲'}</span>`);
+    render();
+  };
+});
+
+// Load data
+(async()=>{
+  try{
+    BESTBALL = await (await fetch(DATA_URL, {cache:'no-store'})).json();
+  }catch(e){
+    BESTBALL = {players:[], count:0, updated:""};
+    console.warn('Could not load', DATA_URL, e);
+  }
+  const src = document.getElementById('srcInfo');
+  const when = BESTBALL.updated ? new Date(BESTBALL.updated).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
+  src.innerHTML = BESTBALL.count
+    ? `<b>${BESTBALL.count}</b> players · Underdog · updated <b>${when}</b>` + (BESTBALL.myRankingsJoined ? ' · my ranks joined' : '')
+    : `No data loaded.  Place <b>bestball.json</b> next to this file.`;
+  render();
+})();
+</script>
+</body>
+</html>
