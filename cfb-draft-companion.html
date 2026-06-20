@@ -104,7 +104,7 @@
   table.dtable tr.drafted td:nth-child(2){text-decoration:line-through}
   table.dtable tr.mine{background:rgba(255,90,31,.08)}
   table.dtable tr.mine:hover td{background:rgba(255,90,31,.13)}
-  table.dtable tr.mine td:nth-child(2)::after{content:" ★";color:var(--accent);font-size:12px}
+  table.dtable tr.mine td:nth-child(3)::after{content:" ★";color:var(--accent);font-size:12px}
   .pname-d{font-family:var(--disp);font-weight:600;font-size:15px}
   .adp-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
   .star-btn{background:transparent;border:1px solid var(--line2);color:var(--dim);font-size:14px;padding:3px 8px;border-radius:6px;cursor:pointer;line-height:1;transition:.12s}
@@ -135,6 +135,21 @@
   .stack .stk-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--disp);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
   .stack .stk-tag{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:1px}
   .stack .stk-players{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;line-height:1.6}
+
+  .correl-summary{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg2);padding:8px 10px;border-radius:6px;margin-bottom:10px;line-height:1.5}
+  .correl-summary .v{color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px}
+  .correl-teams{display:flex;flex-direction:column;gap:6px}
+  .correl-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:var(--bg2);border-radius:8px;padding:7px 10px}
+  .correl-row .tier{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:1px}
+  .tier-ELITE{background:rgba(39,215,150,.18);color:var(--green)}
+  .tier-STRONG{background:rgba(61,139,255,.18);color:var(--blue)}
+  .tier-MID{background:rgba(255,176,31,.18);color:var(--accent2)}
+  .tier-LONG{background:rgba(93,111,142,.18);color:var(--dim)}
+  .correl-row .team{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:13px}
+  .correl-row .ct{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+  .correl-row .ct .stk{color:var(--accent);font-weight:600}
+  .correl-row .players{font-family:var(--mono);font-size:10.5px;color:var(--dim);flex-basis:100%;line-height:1.5}
+  .correl-empty{font-family:var(--mono);font-size:11px;color:var(--dim);padding:12px 4px;text-align:center}
 
   .byes{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .byecell{background:var(--bg2);border-radius:6px;padding:6px 4px;text-align:center;font-family:var(--mono)}
@@ -203,6 +218,7 @@
         <table class="dtable">
           <thead>
             <tr>
+              <th></th>
               <th data-k="adp">ADP</th>
               <th class="l" data-k="name">Player</th>
               <th data-k="pos">Pos</th>
@@ -210,7 +226,6 @@
               <th data-k="proj">Proj</th>
               <th data-k="bye">Bye</th>
               <th data-k="myRank">My Rank</th>
-              <th></th>
             </tr>
           </thead>
           <tbody id="dbody"></tbody>
@@ -230,6 +245,13 @@
         <h3>Stacks</h3>
         <p class="dnote">QB + pass-catcher pairings, plus any team where you own 2+ skill players.</p>
         <div class="stacks" id="stacks"></div>
+      </div>
+
+      <div class="dpanel">
+        <h3>Playoff Correlation</h3>
+        <p class="dnote">Players on contender teams keep scoring through weeks 11 to 15 (CFB Playoff).  Tier is based on the lowest ADP among all draftable players on the team — a proxy for how strong the team is.</p>
+        <div class="correl-summary" id="correlSummary"></div>
+        <div class="correl-teams" id="correlTeams"></div>
       </div>
 
       <div class="dpanel">
@@ -321,6 +343,7 @@ function render(){
     const cls  = isMine(p.id) ? 'mine' : (isDrafted(p.id) ? 'drafted' : '');
     const star = isMine(p.id) ? 'on' : '';
     return `<tr class="${cls}" data-id="${p.id}">
+      <td><button class="star-btn ${star}" data-star="${p.id}" title="Mark as mine">★</button></td>
       <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
       <td class="l"><span class="pname-d">${p.name}</span></td>
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
@@ -328,7 +351,6 @@ function render(){
       <td class="num">${p.proj==null?'—':p.proj}</td>
       <td class="num" style="color:var(--muted)">${p.bye==null?'—':'W'+p.bye}</td>
       <td class="num">${p.myRank==null?'—':p.myRank}</td>
-      <td><button class="star-btn ${star}" data-star="${p.id}" title="Mark as mine">★</button></td>
     </tr>`;
   }).join('');
 
@@ -336,7 +358,7 @@ function render(){
     body.insertAdjacentHTML('beforeend',
       `<tr><td colspan="8" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${shown.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
   }
-  renderRoster(); renderStacks(); renderByes();
+  renderRoster(); renderStacks(); renderCorrelation(); renderByes();
 }
 
 function renderRoster(){
@@ -385,6 +407,67 @@ function renderStacks(){
     return `<div class="stack ${isQbStack?'qb-stack':''}">
       <div class="stk-head">${team} <span style="color:var(--dim);font-size:11px">${arr.length} picks</span> <span class="stk-tag">${tag}</span></div>
       <div class="stk-players">${players}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCorrelation(){
+  const mine = BESTBALL.players.filter(p=>isMine(p.id));
+
+  // Team "ace ADP" = lowest ADP among ALL players on that team in the bestball pool.
+  // Proxy for team strength.
+  const teamAceADP = {};
+  BESTBALL.players.forEach(p=>{
+    if(!p.team || p.adp==null) return;
+    if(teamAceADP[p.team]==null || p.adp < teamAceADP[p.team]) teamAceADP[p.team] = p.adp;
+  });
+  const tier = adp => adp==null ? 'LONG'
+                    : adp <= 25  ? 'ELITE'
+                    : adp <= 75  ? 'STRONG'
+                    : adp <= 150 ? 'MID'
+                    : 'LONG';
+  const tierRank = {ELITE:0, STRONG:1, MID:2, LONG:3};
+
+  // Group your picks by team
+  const byTeam = {};
+  mine.forEach(p=>{
+    if(!p.team) return;
+    (byTeam[p.team] = byTeam[p.team]||[]).push(p);
+  });
+  const teams = Object.entries(byTeam).map(([t, arr])=>({
+    team: t,
+    players: arr,
+    aceADP: teamAceADP[t],
+    tier: tier(teamAceADP[t]),
+    isQbStack: arr.some(p=>p.pos==='QB') && arr.some(p=>['WR','TE','RB'].includes(p.pos)),
+  }));
+  teams.sort((a,b)=> (tierRank[a.tier]-tierRank[b.tier]) || ((a.aceADP||999)-(b.aceADP||999)));
+
+  // Summary
+  const total = mine.length;
+  const contenderPicks = teams
+    .filter(t=>t.tier==='ELITE' || t.tier==='STRONG')
+    .reduce((s,t)=>s+t.players.length, 0);
+  const summary = total === 0
+    ? `<span style="color:var(--dim)">No picks yet.</span>`
+    : `<span class="v">${contenderPicks}</span> of <span class="v">${total}</span> picks on Elite + Strong contender teams · <span class="v">${teams.length}</span> distinct schools`;
+  document.getElementById('correlSummary').innerHTML = summary;
+
+  const el = document.getElementById('correlTeams');
+  if(teams.length === 0){
+    el.innerHTML = `<div class="correl-empty">Tap the ★ on any player to start building your roster.</div>`;
+    return;
+  }
+  el.innerHTML = teams.map(t=>{
+    const stk  = t.isQbStack ? ` <span class="stk">★ QB STACK</span>` : '';
+    const list = t.players
+      .sort((a,b)=>({QB:0,RB:1,WR:2,TE:3}[a.pos]??9) - ({QB:0,RB:1,WR:2,TE:3}[b.pos]??9))
+      .map(p=>`${p.pos} ${p.name}`).join(' · ');
+    return `<div class="correl-row">
+      <span class="tier tier-${t.tier}">${t.tier}</span>
+      <span class="team">${t.team}</span>
+      <span class="ct">${t.players.length} pick${t.players.length>1?'s':''}${stk}</span>
+      <div class="players">${list}</div>
     </div>`;
   }).join('');
 }
