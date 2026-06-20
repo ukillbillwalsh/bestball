@@ -104,7 +104,13 @@
   table.dtable tr.drafted td:nth-child(2){text-decoration:line-through}
   table.dtable tr.mine{background:rgba(255,90,31,.08)}
   table.dtable tr.mine:hover td{background:rgba(255,90,31,.13)}
-  table.dtable tr.mine td:nth-child(3)::after{content:" ★";color:var(--accent);font-size:12px}
+  table.dtable tr.mine td:nth-child(4)::after{content:" ★";color:var(--accent);font-size:12px}
+  table.dtable tr.selected td{background:rgba(255,176,31,.10) !important;box-shadow:inset 3px 0 0 var(--accent2)}
+  table.dtable tr.selected:hover td{background:rgba(255,176,31,.16) !important}
+
+  .draft-btn{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:4px;width:24px;height:24px;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center}
+  .draft-btn:hover{color:var(--ink);border-color:var(--muted);background:var(--bg2)}
+  .draft-btn.on{background:rgba(255,77,94,.15);color:var(--red);border-color:rgba(255,77,94,.5)}
   .pname-d{font-family:var(--disp);font-weight:600;font-size:15px}
   .adp-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
   .star-btn{background:transparent;border:1px solid var(--line2);color:var(--dim);font-size:14px;padding:3px 8px;border-radius:6px;cursor:pointer;line-height:1;transition:.12s}
@@ -222,6 +228,7 @@
           <thead>
             <tr>
               <th></th>
+              <th></th>
               <th data-k="adp">ADP</th>
               <th class="l" data-k="name">Player</th>
               <th data-k="pos">Pos</th>
@@ -234,7 +241,7 @@
           <tbody id="dbody"></tbody>
         </table>
       </div>
-      <p class="footnote">Tap any row to mark a player <b>drafted</b>. Tap the ★ to mark them <b>yours</b>. Draft state persists in your browser — a refresh won't wipe it.</p>
+      <p class="footnote">Tap any row to <b>preview</b> that player's stacking partners. Tap the ★ to mark them <b>yours</b>. Tap <b>+/−</b> to mark them drafted by anyone. Draft state persists in your browser.</p>
     </div>
 
     <aside class="draftside">
@@ -252,7 +259,7 @@
 
       <div class="dpanel">
         <h3>Stacking Partners</h3>
-        <p class="dnote">Best available picks on teams where you already have someone.  Tap a row to mark them drafted (yours).</p>
+        <p class="dnote">Tap any row in the main table to preview that player's available teammates here.  Tap a suggestion to mark them yours.</p>
         <div class="partners-summary" id="partnersSummary"></div>
         <div class="partners" id="partners"></div>
       </div>
@@ -284,16 +291,23 @@ let query = '';
 function loadState(){
   try{
     const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return {drafted:[], mine:[]};
+    if(!raw) return {drafted:[], mine:[], selected:null};
     const o = JSON.parse(raw);
-    return {drafted: o.drafted||[], mine: o.mine||[]};
-  }catch(e){ return {drafted:[], mine:[]}; }
+    return {drafted: o.drafted||[], mine: o.mine||[], selected: o.selected||null};
+  }catch(e){ return {drafted:[], mine:[], selected:null}; }
 }
 function saveState(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(draftState)); }catch(e){}
 }
 const isDrafted = id => draftState.drafted.includes(id) || draftState.mine.includes(id);
 const isMine    = id => draftState.mine.includes(id);
+const isSelected= id => draftState.selected === id;
+
+function toggleSelected(id){
+  draftState.selected = (draftState.selected === id) ? null : id;
+  saveState();
+  render();
+}
 
 function toggleDrafted(id){
   if(isMine(id)){
@@ -348,10 +362,20 @@ function render(){
   const cap = 500;
   const shown = rows.slice(0, cap);
   body.innerHTML = shown.map(p=>{
-    const cls  = isMine(p.id) ? 'mine' : (isDrafted(p.id) ? 'drafted' : '');
-    const star = isMine(p.id) ? 'on' : '';
+    const drafted = isDrafted(p.id);
+    const mine    = isMine(p.id);
+    const selected= isSelected(p.id);
+    const cls     = [
+      mine     ? 'mine'     : '',
+      !mine && drafted ? 'drafted' : '',
+      selected ? 'selected' : '',
+    ].filter(Boolean).join(' ');
+    const starOn = mine ? 'on' : '';
+    const dOn    = drafted && !mine ? 'on' : '';
+    const dSym   = drafted && !mine ? '−' : '+';
     return `<tr class="${cls}" data-id="${p.id}">
-      <td><button class="star-btn ${star}" data-star="${p.id}" title="Mark as mine">★</button></td>
+      <td><button class="star-btn ${starOn}" data-star="${p.id}" title="Mark as mine">★</button></td>
+      <td><button class="draft-btn ${dOn}" data-draft="${p.id}" title="Mark drafted">${dSym}</button></td>
       <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
       <td class="l"><span class="pname-d">${p.name}</span></td>
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
@@ -364,7 +388,7 @@ function render(){
 
   if(rows.length > shown.length){
     body.insertAdjacentHTML('beforeend',
-      `<tr><td colspan="8" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${shown.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
+      `<tr><td colspan="9" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${shown.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
   }
   renderRoster(); renderStacks(); renderPartners(); renderByes();
 }
@@ -420,127 +444,115 @@ function renderStacks(){
 }
 
 function renderPartners(){
-  const mine     = BESTBALL.players.filter(p=>isMine(p.id));
-  const drafted  = new Set(draftState.drafted);
-  const POS_RANK = {QB:0, WR:1, TE:2, RB:3};
+  const sel       = draftState.selected;
+  const summaryEl = document.getElementById('partnersSummary');
+  const listEl    = document.getElementById('partners');
+
+  if(!sel){
+    summaryEl.innerHTML = `<span style="color:var(--dim)">Tap any row in the player table to preview that player's stacking partners.</span>`;
+    listEl.innerHTML = '';
+    return;
+  }
+
+  const player = BESTBALL.players.find(p => p.id === sel);
+  if(!player){
+    summaryEl.innerHTML = `<span style="color:var(--dim)">Selected player not found in the current pool.</span>`;
+    listEl.innerHTML = '';
+    return;
+  }
+  if(!player.team){
+    summaryEl.innerHTML = `<span style="color:var(--dim)">${player.name} has no team data, can't suggest partners.</span>`;
+    listEl.innerHTML = '';
+    return;
+  }
 
   // Rank prefers Bruce's myRank, falls back to ADP
   const rank = p => p.myRank != null ? p.myRank
                   : p.adp    != null ? p.adp
                   : Infinity;
 
-  // Identify teams where Bruce has any pick and group his picks by team
-  const myByTeam = {};
-  mine.forEach(p=>{
-    if(!p.team) return;
-    (myByTeam[p.team] = myByTeam[p.team] || []).push(p);
-  });
+  const drafted = new Set(draftState.drafted);
+  const team    = player.team;
 
-  // Count how many of his current picks share each bye week.  Used to flag
-  // when a candidate would worsen an existing bye cluster.
+  const candidates = BESTBALL.players.filter(p =>
+    p.team === team &&
+    p.id !== sel &&
+    !drafted.has(p.id) &&
+    !isMine(p.id) &&
+    rank(p) !== Infinity
+  );
+
+  // Position priority depends on the selected player's slot
+  const isQB   = player.pos === 'QB';
+  const isPass = player.pos === 'WR' || player.pos === 'TE';
+  const posOrder = isQB
+    ? {WR:0, TE:1, RB:2, QB:3}       // chasing his catchers
+    : isPass
+      ? {QB:0, WR:1, TE:2, RB:3}     // get the QB
+      : {QB:0, WR:1, TE:2, RB:3};    // RB anchor — still grab QB first
+
+  candidates.sort((a, b) =>
+    (posOrder[a.pos] ?? 9) - (posOrder[b.pos] ?? 9) ||
+    rank(a) - rank(b)
+  );
+
+  const top = candidates.slice(0, 8);
+
+  // Bye-cluster context: count of YOUR picks (plus the selected player if not
+  // already yours) sharing each bye, so a "conflict" warning means picking
+  // this candidate too would push the cluster to 3+.
   const byeCounts = {};
-  mine.forEach(p=>{ if(p.bye!=null) byeCounts[p.bye] = (byeCounts[p.bye]||0)+1; });
-
-  // Build the team sections, sorted so the strongest stack setup comes first:
-  //   QB + skill on same team (highest value), then QB only, then 2+ skill no QB,
-  //   then single skill, then RB-only / unranked-anchor teams.
-  function priority(picks){
-    const hasQB    = picks.some(p=>p.pos==='QB');
-    const skillCnt = picks.filter(p=>['WR','TE','RB'].includes(p.pos)).length;
-    if(hasQB && skillCnt > 0) return 0;
-    if(hasQB)                 return 1;
-    if(skillCnt >= 2)         return 2;
-    return 3;
-  }
-  function anchorPick(picks){
-    // Best pick on this team that anchors the stack — QB if present, else the
-    // lowest-ADP skill player.
-    const qb = picks.find(p=>p.pos==='QB');
-    if(qb) return qb;
-    return picks.slice().sort((a,b)=>rank(a)-rank(b))[0];
+  BESTBALL.players.filter(p=>isMine(p.id)).forEach(p=>{
+    if(p.bye!=null) byeCounts[p.bye] = (byeCounts[p.bye]||0)+1;
+  });
+  if(!isMine(sel) && player.bye!=null){
+    byeCounts[player.bye] = (byeCounts[player.bye]||0)+1;
   }
 
-  const sections = Object.entries(myByTeam).map(([team, picks])=>{
-    const anchor = anchorPick(picks);
-    const haveQB = picks.some(p=>p.pos==='QB');
+  // Selected player summary header
+  const selRk = player.myRank != null ? `MY ${player.myRank}`
+              : player.adp    != null ? `ADP ${player.adp}`
+              : 'UR';
+  const ownership = isMine(sel)
+    ? ` <span style="color:var(--accent);font-weight:600">★ YOURS</span>`
+    : drafted.has(sel)
+      ? ` <span style="color:var(--red);font-weight:600">DRAFTED</span>`
+      : '';
+  summaryEl.innerHTML = `Showing partners for <b>${player.pos} ${player.name}</b> · ${team} · ${selRk}${ownership}`;
 
-    // Candidate pool: same-team, available, has any rank signal
-    const candidates = BESTBALL.players.filter(p=>
-      p.team === team &&
-      !isMine(p.id) &&
-      !drafted.has(p.id) &&
-      rank(p) !== Infinity
-    );
-
-    // Stack-fit ordering: receivers first if we have the QB, QB first if we don't.
-    // Within position group, lowest rank first.
-    const posOrder = haveQB
-      ? {WR:0, TE:1, RB:2, QB:3}   // chasing QB's catchers
-      : {QB:0, WR:1, TE:2, RB:3};  // missing the QB
-    candidates.sort((a,b)=>
-      (posOrder[a.pos]??9) - (posOrder[b.pos]??9) ||
-      rank(a) - rank(b)
-    );
-
-    // Take top 3
-    const picks3 = candidates.slice(0, 3);
-    return {team, picks, anchor, haveQB, suggestions: picks3, pri: priority(picks)};
-  }).filter(s => s.suggestions.length > 0)
-    .sort((a,b)=> a.pri - b.pri || rank(a.anchor) - rank(b.anchor));
-
-  // Summary
-  const totalSuggestions = sections.reduce((s,sec)=>s+sec.suggestions.length, 0);
-  let summary;
-  if(mine.length === 0){
-    summary = `<span style="color:var(--dim)">No picks yet.  Mark players with the ★ to see stacking partners.</span>`;
-  } else if(sections.length === 0){
-    summary = `<span style="color:var(--dim)">No available stacking partners on your teams.</span>`;
-  } else {
-    summary = `<span class="v">${totalSuggestions}</span> partner${totalSuggestions!==1?'s':''} across <span class="v">${sections.length}</span> team${sections.length!==1?'s':''}`;
-  }
-  document.getElementById('partnersSummary').innerHTML = summary;
-
-  // Render team sections
-  if(sections.length === 0){
-    document.getElementById('partners').innerHTML = '';
+  if(top.length === 0){
+    listEl.innerHTML = `<div class="partner-empty">No available teammates with rank data on ${team}.</div>`;
     return;
   }
-  document.getElementById('partners').innerHTML = sections.map(sec=>{
-    const anchorLabel = `${sec.anchor.pos} ${sec.anchor.name}` +
-      (rank(sec.anchor) !== Infinity ? ` · ${sec.anchor.myRank != null ? 'MY ' + sec.anchor.myRank : 'ADP ' + sec.anchor.adp}` : '');
-    const yourCount = sec.picks.length;
-    const moreNote = yourCount > 1 ? ` <b>+${yourCount-1}</b>` : '';
 
-    const rows = sec.suggestions.map(p=>{
-      // Stack tag: identify what kind of pairing this would be
-      let tag = '';
-      if(sec.haveQB && (p.pos==='WR' || p.pos==='TE')) tag = 'QB stack';
-      else if(!sec.haveQB && p.pos==='QB')             tag = 'pair the QB';
-      else if(sec.haveQB && p.pos==='RB')              tag = 'team correlation';
-      else if(p.pos==='WR' || p.pos==='TE')            tag = '2nd skill';
+  const rows = top.map(p=>{
+    let tag = '';
+    if(isQB   && (p.pos==='WR' || p.pos==='TE')) tag = 'QB stack';
+    else if(!isQB && p.pos==='QB')               tag = 'pair the QB';
+    else if(isQB && p.pos==='RB')                tag = 'team correlation';
+    else if(p.pos==='WR' || p.pos==='TE')        tag = '2nd skill';
 
-      const rk      = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
-      const byeNote = p.bye==null ? '—' : `W${p.bye}`;
-      const conflict = (p.bye!=null && byeCounts[p.bye] >= 2) ? 'conflict' : '';
-      const byeTitle = conflict ? `shares bye with ${byeCounts[p.bye]} of your picks` : '';
+    const rk      = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
+    const byeNote = p.bye==null ? '—' : `W${p.bye}`;
+    const conflict = (p.bye!=null && byeCounts[p.bye] >= 2) ? 'conflict' : '';
+    const byeTitle = conflict ? `would push your bye cluster on W${p.bye} to ${byeCounts[p.bye]+1}` : '';
 
-      return `<div class="partner-row" data-star="${p.id}">
-        <span class="posbadge pos-${p.pos}">${p.pos}</span>
-        <span class="nm">${p.name}</span>
-        <span class="adp">${rk}</span>
-        <span class="bye ${conflict}" title="${byeTitle}">${byeNote}</span>
-        ${tag ? `<span class="stk-tag">${tag.toUpperCase()}</span>` : ''}
-      </div>`;
-    }).join('');
-
-    return `<div class="partner-team">
-      <div class="partner-head">
-        <span class="team">${sec.team}</span>
-        <span class="anchor">your: <b>${anchorLabel}</b>${moreNote}</span>
-      </div>
-      <div class="partner-list">${rows}</div>
+    return `<div class="partner-row" data-star="${p.id}">
+      <span class="posbadge pos-${p.pos}">${p.pos}</span>
+      <span class="nm">${p.name}</span>
+      <span class="adp">${rk}</span>
+      <span class="bye ${conflict}" title="${byeTitle}">${byeNote}</span>
+      ${tag ? `<span class="stk-tag">${tag.toUpperCase()}</span>` : ''}
     </div>`;
   }).join('');
+
+  listEl.innerHTML = `<div class="partner-team">
+    <div class="partner-head">
+      <span class="team">${team}</span>
+      <span class="anchor">${top.length} available</span>
+    </div>
+    <div class="partner-list">${rows}</div>
+  </div>`;
 }
 
 function renderByes(){
@@ -559,8 +571,10 @@ function renderByes(){
 document.addEventListener('click', e=>{
   const star = e.target.closest('[data-star]');
   if(star){ e.stopPropagation(); toggleMine(star.dataset.star); return; }
+  const draft = e.target.closest('[data-draft]');
+  if(draft){ e.stopPropagation(); toggleDrafted(draft.dataset.draft); return; }
   const row = e.target.closest('#dbody tr[data-id]');
-  if(row){ toggleDrafted(row.dataset.id); }
+  if(row){ toggleSelected(row.dataset.id); }
 });
 
 // Wire controls
@@ -577,7 +591,7 @@ document.getElementById('hidedrafted').onclick  = e=>{ e.currentTarget.classList
 document.getElementById('hideunranked').onclick = e=>{ e.currentTarget.classList.toggle('on'); render(); };
 document.getElementById('resetdraft').onclick = ()=>{
   if(confirm('Reset the draft?  All "drafted" and "mine" markers will be cleared.')){
-    draftState = {drafted:[], mine:[]}; saveState(); render();
+    draftState = {drafted:[], mine:[], selected:null}; saveState(); render();
   }
 };
 document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
