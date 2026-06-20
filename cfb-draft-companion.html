@@ -267,6 +267,11 @@
 const DATA_URL = (typeof window!=='undefined' && window.BESTBALL_URL) || './bestball.json';
 const LS_KEY = 'cfb_draft_companion_v1';
 
+// BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
+// matching the `team` field in bestball.json.  If non-empty, it overrides
+// whatever bye each player has in bestball.json.  Empty = use bestball.json's.
+const BYE_WEEKS = {};
+
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
 let sortKey = 'adp', sortDir = 1;
@@ -528,10 +533,22 @@ document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
     BESTBALL = {players:[], count:0, updated:""};
     console.warn('Could not load', DATA_URL, e);
   }
+  // Apply baked-in bye weeks if present.  BYE_WEEKS wins over bestball.json
+  // for any team it covers; players on teams not in the table keep whatever
+  // bye they already had (Underdog field or earlier CFBD join).
+  const byeKeys = Object.keys(BYE_WEEKS);
+  if (BESTBALL.players && byeKeys.length){
+    BESTBALL.players.forEach(p=>{
+      if (p.team && BYE_WEEKS[p.team] != null) p.bye = BYE_WEEKS[p.team];
+    });
+  }
   const src = document.getElementById('srcInfo');
   const when = BESTBALL.updated ? new Date(BESTBALL.updated).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
+  const tags = [];
+  if (BESTBALL.myRankingsJoined) tags.push('my ranks joined');
+  if (byeKeys.length)            tags.push(`byes baked (${byeKeys.length})`);
   src.innerHTML = BESTBALL.count
-    ? `<b>${BESTBALL.count}</b> players · Underdog · updated <b>${when}</b>` + (BESTBALL.myRankingsJoined ? ' · my ranks joined' : '')
+    ? `<b>${BESTBALL.count}</b> players · Underdog · updated <b>${when}</b>` + (tags.length ? ' · ' + tags.join(' · ') : '')
     : `No data loaded.  Place <b>bestball.json</b> next to this file.`;
   render();
 })();
