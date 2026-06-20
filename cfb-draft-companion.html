@@ -138,18 +138,27 @@
 
   .correl-summary{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg2);padding:8px 10px;border-radius:6px;margin-bottom:10px;line-height:1.5}
   .correl-summary .v{color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px}
-  .correl-teams{display:flex;flex-direction:column;gap:6px}
-  .correl-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:var(--bg2);border-radius:8px;padding:7px 10px}
-  .correl-row .tier{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:1px}
-  .tier-ELITE{background:rgba(39,215,150,.18);color:var(--green)}
-  .tier-STRONG{background:rgba(61,139,255,.18);color:var(--blue)}
-  .tier-MID{background:rgba(255,176,31,.18);color:var(--accent2)}
-  .tier-LONG{background:rgba(93,111,142,.18);color:var(--dim)}
-  .correl-row .team{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:13px}
-  .correl-row .ct{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
-  .correl-row .ct .stk{color:var(--accent);font-weight:600}
-  .correl-row .players{font-family:var(--mono);font-size:10.5px;color:var(--dim);flex-basis:100%;line-height:1.5}
-  .correl-empty{font-family:var(--mono);font-size:11px;color:var(--dim);padding:12px 4px;text-align:center}
+  .correl-weeks{display:flex;flex-direction:column;gap:8px}
+  .correl-wk{background:var(--bg2);border-radius:8px;padding:9px 11px;border-left:3px solid var(--line)}
+  .correl-wk.tier-SAFE{border-left-color:var(--green)}
+  .correl-wk.tier-WATCH{border-left-color:var(--blue)}
+  .correl-wk.tier-RISK{border-left-color:var(--accent2)}
+  .correl-wk.tier-CRITICAL{border-left-color:var(--red)}
+  .correl-wk-head{display:flex;align-items:center;gap:8px}
+  .correl-wk-head .label{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:13px}
+  .correl-wk-head .badge{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:1px}
+  .tier-SAFE     .badge{background:rgba(39,215,150,.18);color:var(--green)}
+  .tier-WATCH    .badge{background:rgba(61,139,255,.18);color:var(--blue)}
+  .tier-RISK     .badge{background:rgba(255,176,31,.18);color:var(--accent2)}
+  .tier-CRITICAL .badge{background:rgba(255,77,94,.18);color:var(--red)}
+  .correl-wk-head .ct{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+  .correl-wk-players{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:5px;line-height:1.7;display:flex;flex-direction:column;gap:1px}
+  .correl-wk-players .p{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+  .correl-wk-players .p .nm{color:var(--muted)}
+  .correl-wk-players .p .meta{color:var(--dim);font-size:10px}
+  .correl-wk-players .p.top25 .nm{color:var(--red);font-weight:600}
+  .correl-wk-players .p.top50 .nm{color:var(--accent2);font-weight:600}
+  .correl-wk-empty{color:var(--dim);font-style:italic;font-size:11px;margin-top:3px}
 
   .byes{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .byecell{background:var(--bg2);border-radius:6px;padding:6px 4px;text-align:center;font-family:var(--mono)}
@@ -249,9 +258,9 @@
 
       <div class="dpanel">
         <h3>Playoff Correlation</h3>
-        <p class="dnote">Players on contender teams keep scoring through weeks 11 to 15 (CFB Playoff).  Tier is based on the lowest ADP among all draftable players on the team — a proxy for how strong the team is.</p>
+        <p class="dnote">Underdog playoffs run weeks 11 to 13.  Players on bye that week score zero.  Watch for high-ADP or high-ranked picks stacking onto the same off week.</p>
         <div class="correl-summary" id="correlSummary"></div>
-        <div class="correl-teams" id="correlTeams"></div>
+        <div class="correl-weeks" id="correlWeeks"></div>
       </div>
 
       <div class="dpanel">
@@ -418,61 +427,82 @@ function renderStacks(){
 
 function renderCorrelation(){
   const mine = BESTBALL.players.filter(p=>isMine(p.id));
+  const PLAYOFF_WEEKS = [11, 12, 13];
 
-  // Team "ace ADP" = lowest ADP among ALL players on that team in the bestball pool.
-  // Proxy for team strength.
-  const teamAceADP = {};
-  BESTBALL.players.forEach(p=>{
-    if(!p.team || p.adp==null) return;
-    if(teamAceADP[p.team]==null || p.adp < teamAceADP[p.team]) teamAceADP[p.team] = p.adp;
-  });
-  const tier = adp => adp==null ? 'LONG'
-                    : adp <= 25  ? 'ELITE'
-                    : adp <= 75  ? 'STRONG'
-                    : adp <= 150 ? 'MID'
-                    : 'LONG';
-  const tierRank = {ELITE:0, STRONG:1, MID:2, LONG:3};
+  // "Rank" of a player: Bruce's own rank if set, else Underdog ADP, else
+  // Infinity (no impact).  Lower = more valuable.
+  const rank = p => p.myRank != null ? p.myRank
+                  : p.adp    != null ? p.adp
+                  : Infinity;
+  // Impact points for a single bye:  top-25 = 3, top-50 = 2, top-100 = 1.
+  const impact = p => {
+    const r = rank(p);
+    return r <= 25  ? 3
+         : r <= 50  ? 2
+         : r <= 100 ? 1
+         : 0;
+  };
+  // Tier based on summed impact within the week.  A single top-25 on bye
+  // is already RISK (3pts); two elites on the same bye = CRITICAL.
+  const tier = (totImpact, count) =>
+       count === 0    ? 'SAFE'
+     : totImpact === 0 ? 'SAFE'   // only depth pieces on bye, no real exposure
+     : totImpact <= 2 ? 'WATCH'
+     : totImpact <= 5 ? 'RISK'
+     :                  'CRITICAL';
 
-  // Group your picks by team
-  const byTeam = {};
-  mine.forEach(p=>{
-    if(!p.team) return;
-    (byTeam[p.team] = byTeam[p.team]||[]).push(p);
+  const byWeek = PLAYOFF_WEEKS.map(w=>{
+    const onBye = mine.filter(p => p.bye === w);
+    const totImpact = onBye.reduce((s,p)=>s+impact(p), 0);
+    const top50 = onBye.filter(p=>rank(p) <= 50).length;
+    return {week: w, players: onBye, totImpact, top50, tier: tier(totImpact, onBye.length)};
   });
-  const teams = Object.entries(byTeam).map(([t, arr])=>({
-    team: t,
-    players: arr,
-    aceADP: teamAceADP[t],
-    tier: tier(teamAceADP[t]),
-    isQbStack: arr.some(p=>p.pos==='QB') && arr.some(p=>['WR','TE','RB'].includes(p.pos)),
-  }));
-  teams.sort((a,b)=> (tierRank[a.tier]-tierRank[b.tier]) || ((a.aceADP||999)-(b.aceADP||999)));
 
   // Summary
-  const total = mine.length;
-  const contenderPicks = teams
-    .filter(t=>t.tier==='ELITE' || t.tier==='STRONG')
-    .reduce((s,t)=>s+t.players.length, 0);
-  const summary = total === 0
-    ? `<span style="color:var(--dim)">No picks yet.</span>`
-    : `<span class="v">${contenderPicks}</span> of <span class="v">${total}</span> picks on Elite + Strong contender teams · <span class="v">${teams.length}</span> distinct schools`;
+  const total       = mine.length;
+  const playoffByes = byWeek.reduce((s,w)=>s+w.players.length, 0);
+  const top50Total  = byWeek.reduce((s,w)=>s+w.top50, 0);
+  const worstTier   = ['CRITICAL','RISK','WATCH','SAFE'].find(t => byWeek.some(w=>w.tier===t)) || 'SAFE';
+
+  let summary = '';
+  if(total === 0){
+    summary = `<span style="color:var(--dim)">No picks yet.  Mark players with the ★ to see playoff-week bye exposure.</span>`;
+  } else if(playoffByes === 0){
+    summary = `<span class="v">0</span> picks on bye across playoff weeks · clean schedule`;
+  } else {
+    summary = `<span class="v">${playoffByes}</span> pick${playoffByes!==1?'s':''} on bye across playoff weeks · <span class="v">${top50Total}</span> top-50 · worst week: <span class="v">${worstTier}</span>`;
+  }
   document.getElementById('correlSummary').innerHTML = summary;
 
-  const el = document.getElementById('correlTeams');
-  if(teams.length === 0){
-    el.innerHTML = `<div class="correl-empty">Tap the ★ on any player to start building your roster.</div>`;
-    return;
-  }
-  el.innerHTML = teams.map(t=>{
-    const stk  = t.isQbStack ? ` <span class="stk">★ QB STACK</span>` : '';
-    const list = t.players
-      .sort((a,b)=>({QB:0,RB:1,WR:2,TE:3}[a.pos]??9) - ({QB:0,RB:1,WR:2,TE:3}[b.pos]??9))
-      .map(p=>`${p.pos} ${p.name}`).join(' · ');
-    return `<div class="correl-row">
-      <span class="tier tier-${t.tier}">${t.tier}</span>
-      <span class="team">${t.team}</span>
-      <span class="ct">${t.players.length} pick${t.players.length>1?'s':''}${stk}</span>
-      <div class="players">${list}</div>
+  // Per-week breakdown
+  document.getElementById('correlWeeks').innerHTML = byWeek.map(w=>{
+    let body;
+    if(w.players.length === 0){
+      body = `<div class="correl-wk-empty">no picks on bye this week</div>`;
+    } else {
+      body = w.players
+        .slice()
+        .sort((a,b)=>rank(a)-rank(b))
+        .map(p=>{
+          const r   = rank(p);
+          const tag = r <= 25 ? 'top25' : r <= 50 ? 'top50' : '';
+          const rk  = p.myRank != null ? `MY ${p.myRank}`
+                    : p.adp    != null ? `ADP ${p.adp}`
+                    : 'UR';
+          return `<div class="p ${tag}">
+            <span class="nm">${p.name}</span>
+            <span class="meta">${p.pos} · ${p.team||'—'} · ${rk}</span>
+          </div>`;
+        }).join('');
+    }
+    const top50Note = w.top50 ? ` · ${w.top50} top-50` : '';
+    return `<div class="correl-wk tier-${w.tier}">
+      <div class="correl-wk-head">
+        <span class="label">Week ${w.week}</span>
+        <span class="badge">${w.tier}</span>
+        <span class="ct">${w.players.length} on bye${top50Note}</span>
+      </div>
+      <div class="correl-wk-players">${body}</div>
     </div>`;
   }).join('');
 }
