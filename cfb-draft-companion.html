@@ -173,6 +173,76 @@
   .footnote{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
   .footnote b{color:var(--muted);font-weight:500}
 
+  /* ============ Tab nav ============ */
+  .tabs{display:flex;gap:2px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .tab{background:transparent;color:var(--muted);border:0;padding:11px 16px;font-family:var(--disp);font-weight:600;font-size:13px;cursor:pointer;letter-spacing:.5px;border-bottom:2px solid transparent;margin-bottom:-1px;text-transform:uppercase}
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+  .tab-pane{display:none}
+  .tab-pane.on{display:block}
+
+  /* ============ Value Stacks ============ */
+  .vshdr{padding:0 6px 8px}
+  .vshdr h2{margin:0 0 4px;font-size:20px;letter-spacing:-.5px}
+  .vshdr p{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--muted);max-width:780px;line-height:1.6}
+  table.vstable td.l, table.vstable th.l{text-align:left}
+  table.vstable .pname-d{font-family:var(--disp);font-size:14px;font-weight:600}
+  table.vstable .meta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px}
+  table.vstable .val{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--ink)}
+  table.vstable .num{font-family:var(--mono);font-size:13px}
+  table.vstable .also{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px}
+
+  /* ============ Portfolio ============ */
+  .portfolio{padding:0 6px}
+  .phdr{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .phdr h2{margin:0;font-size:20px;letter-spacing:-.5px}
+  .phdr p{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.5}
+  .phdr .pactionrow{margin-left:auto;display:flex;gap:6px}
+  .pcards{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:18px}
+  .pcard{background:var(--bg2);border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+  .pcard .plabel{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+  .pcard .pval{font-family:var(--disp);font-weight:700;font-size:24px;color:var(--ink);letter-spacing:-.5px}
+  .pcard .psub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
+  .psections{display:grid;grid-template-columns:repeat(2, 1fr);gap:14px;margin-bottom:18px}
+  .psection{background:var(--bg2);border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+  .psection.wide{grid-column:1 / -1}
+  .psection h3{margin:0 0 4px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink)}
+  .psection p.dnote{margin:0 0 10px}
+  .pempty{font-family:var(--mono);font-size:11px;color:var(--dim);font-style:italic;padding:10px 0;text-align:center}
+  .prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:baseline;padding:5px 4px;font-family:var(--mono);font-size:11.5px;border-bottom:1px solid var(--line)}
+  .prow:last-child{border-bottom:0}
+  .prow .nm{font-family:var(--disp);font-size:13px;color:var(--ink)}
+  .prow .meta{font-size:10px;color:var(--dim)}
+  .prow .count{font-family:var(--disp);font-weight:700;color:var(--accent2);font-size:13px}
+  .prow .rate{color:var(--muted);font-size:10px}
+  .pbuilds{display:flex;flex-direction:column;gap:4px}
+  .pbuild{display:flex;justify-content:space-between;align-items:baseline;padding:5px 4px;font-family:var(--mono);font-size:12px;border-bottom:1px solid var(--line)}
+  .pbuild:last-child{border-bottom:0}
+  .pbuild .bk{color:var(--ink);font-family:var(--disp);font-weight:600;letter-spacing:.5px}
+  .pbuild .bc{color:var(--accent2);font-weight:700}
+  .rf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rf-col h4{margin:0 0 6px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+  .rf-col.up h4{color:var(--green)}
+  .rf-col.down h4{color:var(--red)}
+  .rf-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;padding:4px 4px;font-family:var(--mono);font-size:11.5px;border-bottom:1px solid var(--line)}
+  .rf-row:last-child{border-bottom:0}
+  .rf-row .nm{font-family:var(--disp);font-size:13px;color:var(--ink)}
+  .rf-row .delta.up{color:var(--green);font-weight:700}
+  .rf-row .delta.down{color:var(--red);font-weight:700}
+  .pdrafts{font-family:var(--mono);font-size:11px;background:var(--bg2);border-radius:10px;padding:10px 14px;border:1px solid var(--line)}
+  .pdraft{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+  .pdraft:last-child{border-bottom:0}
+  .pdraft .meta{color:var(--dim);font-size:10px}
+  .pdraft .name{color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px}
+  .pdraft button{background:transparent;border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer}
+  .pdraft button:hover{color:var(--red);border-color:var(--red)}
+
+  @media (max-width:900px){
+    .pcards{grid-template-columns:repeat(2, 1fr)}
+    .psections{grid-template-columns:1fr}
+    .rf-grid{grid-template-columns:1fr}
+  }
+
   @media (max-width:900px){
     .draftlayout{grid-template-columns:1fr}
     .draftside{order:-1}
@@ -206,7 +276,15 @@
   </div>
 </header>
 
+<nav class="tabs">
+  <button class="tab on" data-tab="draft">Draft Board</button>
+  <button class="tab"    data-tab="valuestacks">Value Stacks</button>
+  <button class="tab"    data-tab="portfolio">Portfolio</button>
+</nav>
+
 <main>
+
+<section class="tab-pane on" data-tab-content="draft">
   <div class="draftlayout">
     <div class="draftmain">
       <div class="toolbar">
@@ -221,6 +299,7 @@
         <button class="chip on" id="hidedrafted">Hide drafted</button>
         <button class="chip" id="hideunranked">Hide unranked</button>
         <div class="spacer"></div>
+        <button class="chip" id="savedraft" title="Snapshot your current roster to your Portfolio">Save Draft</button>
         <button class="chip reset-btn" id="resetdraft">Reset draft</button>
       </div>
       <div class="dtablewrap">
@@ -271,6 +350,75 @@
       </div>
     </aside>
   </div>
+</section>
+
+<section class="tab-pane" data-tab-content="valuestacks">
+  <div class="vshdr">
+    <h2>Value Stacks</h2>
+    <p>Every QB paired with their top pass-catcher on the same team.  Sort by Value (combined projection divided by combined ADP cost) to find efficient stack windows.  Lower ADP costs and higher combined projections rise to the top.</p>
+  </div>
+  <div class="dtablewrap">
+    <table class="dtable vstable">
+      <thead>
+        <tr>
+          <th class="l" data-vk="qbName">QB</th>
+          <th class="l" data-vk="primaryName">Top Stack Partner</th>
+          <th data-vk="cost">Cost</th>
+          <th data-vk="gap">Gap</th>
+          <th data-vk="proj">Proj</th>
+          <th data-vk="value">Value</th>
+        </tr>
+      </thead>
+      <tbody id="vsbody"></tbody>
+    </table>
+  </div>
+  <p class="footnote"><b>Cost</b> = sum of QB ADP and partner ADP. <b>Gap</b> = ADP distance between them (how much earlier the partner usually goes). <b>Proj</b> = sum of projected points. <b>Value</b> = Proj &divide; Cost.</p>
+</section>
+
+<section class="tab-pane" data-tab-content="portfolio">
+  <div class="portfolio">
+    <div class="phdr">
+      <div>
+        <h2>Portfolio</h2>
+        <p>Snapshots of drafts you've completed.  Tap <b>Save Draft</b> on the Draft Board after each draft to add it here.</p>
+      </div>
+    </div>
+    <div class="pcards">
+      <div class="pcard"><div class="plabel">Total Drafts</div><div class="pval" id="pTotalDrafts">0</div></div>
+      <div class="pcard"><div class="plabel">Distinct Players Drafted</div><div class="pval" id="pUniquePlayers">0</div></div>
+      <div class="pcard"><div class="plabel">Distinct Teams</div><div class="pval" id="pUniqueTeams">0</div></div>
+      <div class="pcard"><div class="plabel">Top Exposure</div><div class="pval" id="pTopExposure">—</div><div class="psub" id="pTopExposureSub"></div></div>
+    </div>
+    <div class="psections">
+      <div class="psection">
+        <h3>Your Top Exposures</h3>
+        <p class="dnote">Players you've drafted most often across saved drafts.</p>
+        <div id="pExposures"></div>
+      </div>
+      <div class="psection">
+        <h3>Top Stacks</h3>
+        <p class="dnote">Most frequent QB plus pass-catcher combos across saved drafts.</p>
+        <div id="pStacks"></div>
+      </div>
+      <div class="psection">
+        <h3>Build Distribution</h3>
+        <p class="dnote">How your positional breakdowns are distributed.</p>
+        <div id="pBuilds"></div>
+      </div>
+      <div class="psection">
+        <h3>Risers &amp; Fallers</h3>
+        <p class="dnote">Largest 7-day ADP shifts.  Populates once daily snapshots accumulate.</p>
+        <div id="pRisersFallers"></div>
+      </div>
+    </div>
+    <div class="psection wide">
+      <h3>Saved Drafts</h3>
+      <p class="dnote">Each row is one draft snapshot.  Delete to remove from your portfolio.</p>
+      <div class="pdrafts" id="pDraftList"></div>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <script>
@@ -280,7 +428,7 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {"ABILE":2,"AF":3,"AKRON":9,"ALA":9,"ALABA":1,"ALCOR":2,"APP":5,"ARK":8,"ARKAN":2,"ARMY":3,"ASU":4,"AUB":6,"AUSTI":2,"AZ":7,"BALL":9,"BAY":6,"BC":6,"BETHU":2,"BOWLI":10,"BRYAN":2,"BSU":7,"BUCKN":1,"BUFFA":9,"BYU":4,"CAL":10,"CAMPB":1,"CENTR":9,"CHARL":8,"CHATT":1,"CIN":6,"CLEM":6,"COAST":8,"COLGA":1,"COLO":6,"COLOR":6,"DELAW":1,"DUKE":5,"DUQUE":2,"EAST":1,"EASTE":1,"ELON":1,"FLORI":5,"FORDH":3,"FRES":8,"FSU":2,"FURMA":2,"GARDN":1,"GEORG":6,"GRAMB":1,"GT":5,"HAWAI":3,"HOLY":1,"HOU":9,"HOUST":2,"HOWAR":3,"IDAHO":2,"ILL":7,"ILLIN":1,"INCAR":1,"IND":10,"INDIA":2,"IOWA":7,"ISU":7,"JACKS":5,"JAMES":12,"KENNE":5,"KENT":10,"KSU":5,"KU":4,"LAFAY":2,"LAMAR":2,"LIBER":7,"LINDE":1,"LONG":2,"LOU":8,"LOUIS":4,"LSU":9,"MAINE":2,"MARSH":7,"MASSA":9,"MCNEE":1,"MD":8,"MEM":4,"MERCE":1,"MERCY":3,"MERRI":2,"MIA":6,"MIAOH":9,"MICH":6,"MIDDL":6,"MINN":7,"MISS":5,"MISSI":2,"MISSO":5,"MIZ":8,"MONMO":1,"MONTA":1,"MORGA":2,"MSST":6,"MSU":9,"MURRA":2,"NAVY":3,"NCST":7,"ND":8,"NEB":8,"NEVAD":5,"NEW":3,"NICHO":2,"NORFO":3,"NORTH":2,"NW":2,"OHIO":9,"OKST":5,"OLD":11,"ORE":5,"OREGO":8,"OSU":8,"OU":5,"PITT":10,"PORTL":2,"PRAIR":1,"PSU":8,"PUR":8,"RHODE":2,"RICE":9,"RICHM":1,"ROBER":1,"RUT":6,"SACRA":5,"SACRE":1,"SAM":5,"SAMFO":1,"SAN":4,"SCAR":7,"SDSU":10,"SE":2,"SMU":6,"SOUTH":1,"STAN":2,"STONE":1,"STONY":1,"SYR":4,"TAMU":9,"TARLE":2,"TCU":6,"TEMPL":8,"TENN":9,"TENNE":1,"TEX":5,"TEXAS":6,"THE":2,"TOLED":9,"TOWSO":3,"TROY":5,"TTU":6,"TUL":5,"TULSA":9,"UAB":8,"UALBA":2,"UC":1,"UCF":7,"UCLA":5,"UCONN":7,"UF":8,"UGA":8,"UK":9,"UL":6,"UNC":4,"UNLV":3,"USC":7,"UT":2,"UTAH":2,"UTEP":8,"UTSA":9,"UVA":10,"VAN":9,"VILLA":1,"VMI":2,"VT":9,"WAGNE":1,"WAKE":8,"WASHI":10,"WEBER":1,"WEST":3,"WESTE":10,"WILLI":1,"WIS":6,"WOFFO":1,"WSH":8,"WVU":9,"WYOMI":9,"YOUNG":2};
+const BYE_WEEKS = {};
 
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
@@ -567,7 +715,289 @@ function renderByes(){
   }).join('');
 }
 
-// Click delegation
+// ================ TABS ================
+const PORTFOLIO_KEY = 'cfb_portfolio_drafts_v1';
+let vsSortKey = 'value', vsSortDir = -1;
+
+function loadDrafts(){
+  try{ return JSON.parse(localStorage.getItem(PORTFOLIO_KEY)||'[]') || []; }
+  catch(e){ return []; }
+}
+function persistDrafts(drafts){
+  try{ localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(drafts)); }
+  catch(e){}
+}
+function activateTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===name));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('on', p.dataset.tabContent===name));
+  if(name==='valuestacks') renderValueStacks();
+  if(name==='portfolio')   renderPortfolio();
+}
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=> activateTab(t.dataset.tab);
+});
+
+// ================ VALUE STACKS ================
+function computeValueStacks(){
+  const players = BESTBALL.players || [];
+  const qbs = players.filter(p =>
+    p.pos === 'QB' && p.adp != null && p.proj != null && p.team
+  );
+
+  return qbs.map(qb => {
+    const catchers = players.filter(p =>
+      p.team === qb.team &&
+      (p.pos === 'WR' || p.pos === 'TE') &&
+      p.adp != null && p.proj != null
+    ).sort((a, b) => a.adp - b.adp);
+
+    if(catchers.length === 0) return null;
+
+    const primary   = catchers[0];
+    const secondary = catchers[1] || null;
+    const cost = qb.adp + primary.adp;
+    const gap  = Math.abs(qb.adp - primary.adp);
+    const proj = qb.proj + primary.proj;
+    const value = cost > 0 ? proj / cost : 0;
+
+    return {
+      qb, primary, secondary,
+      qbName:      qb.name,
+      primaryName: primary.name,
+      cost: Math.round(cost),
+      gap:  Math.round(gap),
+      proj: Math.round(proj),
+      value: +value.toFixed(2),
+    };
+  }).filter(Boolean);
+}
+
+function renderValueStacks(){
+  const stacks = computeValueStacks();
+  stacks.sort((a, b)=>{
+    const x = a[vsSortKey], y = b[vsSortKey];
+    const cmp = typeof x === 'string' ? x.localeCompare(y) : (x - y);
+    return vsSortDir * cmp;
+  });
+  const body = document.getElementById('vsbody');
+  if(stacks.length === 0){
+    body.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">No QBs with projections in the current pool.</td></tr>`;
+    return;
+  }
+  body.innerHTML = stacks.map(s => `
+    <tr>
+      <td class="l">
+        <div class="pname-d">${s.qb.name}</div>
+        <div class="meta">${s.qb.team} · ADP ${s.qb.adp.toFixed(1)}</div>
+      </td>
+      <td class="l">
+        <span class="posbadge pos-${s.primary.pos}" style="margin-right:6px">${s.primary.pos}</span>
+        <span class="pname-d">${s.primary.name}</span>
+        <div class="meta">ADP ${s.primary.adp.toFixed(1)}${s.secondary ? ` · also ${s.secondary.name} (ADP ${s.secondary.adp.toFixed(1)})` : ''}</div>
+      </td>
+      <td class="num">${s.cost}</td>
+      <td class="num">${s.gap}</td>
+      <td class="num">${s.proj}</td>
+      <td class="num"><span class="val">${s.value.toFixed(2)}</span></td>
+    </tr>
+  `).join('');
+}
+
+// Value Stacks column sort
+document.querySelectorAll('.vstable thead th[data-vk]').forEach(th=>{
+  th.onclick = ()=>{
+    const k = th.dataset.vk;
+    if(vsSortKey === k) vsSortDir *= -1;
+    else { vsSortKey = k; vsSortDir = (k === 'value' || k === 'proj') ? -1 : 1; }
+    document.querySelectorAll('.vstable thead th .arr').forEach(a=>a.remove());
+    th.insertAdjacentHTML('beforeend', `<span class="arr">${vsSortDir<0?'▼':'▲'}</span>`);
+    renderValueStacks();
+  };
+});
+
+// ================ PORTFOLIO ================
+function saveDraft(){
+  const mine = BESTBALL.players.filter(p=>isMine(p.id));
+  if(mine.length === 0){
+    alert('Your roster is empty.  Mark some players with ★ first.');
+    return;
+  }
+  const drafts = loadDrafts();
+  const name = prompt(`Name this draft (or leave blank for "Draft ${drafts.length+1}"):`, '');
+  drafts.push({
+    timestamp: new Date().toISOString(),
+    name: (name && name.trim()) || `Draft ${drafts.length+1}`,
+    players: mine.map(p=>p.id),
+  });
+  persistDrafts(drafts);
+  alert(`Saved.  You have ${drafts.length} draft${drafts.length===1?'':'s'} in your Portfolio.`);
+  const activeTab = document.querySelector('.tab.on');
+  if(activeTab && activeTab.dataset.tab === 'portfolio') renderPortfolio();
+}
+
+function deleteDraft(idx){
+  if(!confirm('Delete this draft from your portfolio?')) return;
+  const drafts = loadDrafts();
+  drafts.splice(idx, 1);
+  persistDrafts(drafts);
+  renderPortfolio();
+}
+
+function renderPortfolio(){
+  const drafts = loadDrafts();
+  const players = BESTBALL.players || [];
+  const byId = Object.fromEntries(players.map(p=>[p.id, p]));
+
+  // Top cards
+  document.getElementById('pTotalDrafts').textContent = drafts.length;
+  const allIds  = drafts.flatMap(d=>d.players);
+  const unique  = new Set(allIds);
+  document.getElementById('pUniquePlayers').textContent = unique.size;
+  const teams = new Set([...unique].map(id => byId[id]?.team).filter(Boolean));
+  document.getElementById('pUniqueTeams').textContent = teams.size;
+
+  // Exposures
+  const exposureCt = {};
+  drafts.forEach(d => d.players.forEach(pid => {
+    exposureCt[pid] = (exposureCt[pid]||0)+1;
+  }));
+  const exposures = Object.entries(exposureCt)
+    .map(([pid, count]) => ({ player: byId[pid], count, rate: drafts.length ? count/drafts.length : 0 }))
+    .filter(e => e.player)
+    .sort((a, b) => b.count - a.count || (a.player.adp||999) - (b.player.adp||999));
+
+  if(exposures.length){
+    const top = exposures[0];
+    document.getElementById('pTopExposure').textContent = top.player.name;
+    document.getElementById('pTopExposureSub').textContent = `${top.player.pos} · ${top.player.team || '—'} · ${top.count}/${drafts.length} drafts`;
+  } else {
+    document.getElementById('pTopExposure').textContent = '—';
+    document.getElementById('pTopExposureSub').textContent = '';
+  }
+
+  const exposuresEl = document.getElementById('pExposures');
+  if(exposures.length === 0){
+    exposuresEl.innerHTML = `<div class="pempty">No saved drafts yet.</div>`;
+  } else {
+    exposuresEl.innerHTML = exposures.slice(0, 12).map(e => {
+      const p = e.player;
+      const pct = (e.rate*100).toFixed(0);
+      return `<div class="prow">
+        <span class="posbadge pos-${p.pos}">${p.pos}</span>
+        <span><span class="nm">${p.name}</span><div class="meta">${p.team||'—'} · ADP ${p.adp!=null?p.adp.toFixed(1):'—'}</div></span>
+        <span class="count">${e.count}</span>
+        <span class="rate">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Top stacks (QB + WR/TE on same team)
+  const stackCt = {};
+  drafts.forEach(d => {
+    const roster = d.players.map(id => byId[id]).filter(Boolean);
+    const qbs = roster.filter(p => p.pos === 'QB');
+    qbs.forEach(qb => {
+      roster.filter(p => p.team === qb.team && (p.pos === 'WR' || p.pos === 'TE'))
+            .forEach(c => {
+              const k = `${qb.id}|${c.id}`;
+              stackCt[k] = (stackCt[k]||0)+1;
+            });
+    });
+  });
+  const stacks = Object.entries(stackCt)
+    .map(([k, count]) => {
+      const [qbId, cId] = k.split('|');
+      return { qb: byId[qbId], catcher: byId[cId], count, rate: drafts.length ? count/drafts.length : 0 };
+    })
+    .filter(s => s.qb && s.catcher)
+    .sort((a, b) => b.count - a.count);
+
+  const stacksEl = document.getElementById('pStacks');
+  if(stacks.length === 0){
+    stacksEl.innerHTML = `<div class="pempty">${drafts.length===0?'No saved drafts yet.':'No QB plus catcher pairings in your saved drafts.'}</div>`;
+  } else {
+    stacksEl.innerHTML = stacks.slice(0, 10).map(s => {
+      const pct = (s.rate*100).toFixed(0);
+      return `<div class="prow">
+        <span style="font-family:var(--disp);font-weight:600;font-size:11px;color:var(--muted)">${s.qb.team}</span>
+        <span><span class="nm">${s.qb.name} + ${s.catcher.name}</span><div class="meta">${s.qb.pos} + ${s.catcher.pos}</div></span>
+        <span class="count">${s.count}</span>
+        <span class="rate">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Build distribution (QB-RB-WR-TE counts)
+  const buildCt = {};
+  drafts.forEach(d => {
+    const c = {QB:0, RB:0, WR:0, TE:0};
+    d.players.forEach(pid => {
+      const p = byId[pid];
+      if(p && c[p.pos] !== undefined) c[p.pos]++;
+    });
+    const k = `${c.QB}QB · ${c.RB}RB · ${c.WR}WR · ${c.TE}TE`;
+    buildCt[k] = (buildCt[k]||0)+1;
+  });
+  const builds = Object.entries(buildCt).sort((a, b) => b[1] - a[1]);
+  const buildsEl = document.getElementById('pBuilds');
+  if(builds.length === 0){
+    buildsEl.innerHTML = `<div class="pempty">No saved drafts yet.</div>`;
+  } else {
+    buildsEl.innerHTML = `<div class="pbuilds">${builds.map(([k, c]) => {
+      const pct = (c/drafts.length*100).toFixed(0);
+      return `<div class="pbuild"><span class="bk">${k}</span><span class="bc">${c} <span style="color:var(--muted);font-weight:400">(${pct}%)</span></span></div>`;
+    }).join('')}</div>`;
+  }
+
+  // Risers & Fallers — needs adp_7d_ago to be populated in bestball.json
+  const haveHistory = players.some(p => p.adp_7d_ago != null);
+  const rfEl = document.getElementById('pRisersFallers');
+  if(!haveHistory){
+    const daysElapsed = BESTBALL.history_days || 0;
+    rfEl.innerHTML = `<div class="pempty">Collecting daily ADP snapshots — day ${daysElapsed} of 7.  Risers and fallers populate once the window fills in.</div>`;
+  } else {
+    const movers = players
+      .filter(p => p.adp != null && p.adp_7d_ago != null)
+      .map(p => ({ player: p, delta: p.adp_7d_ago - p.adp }));   // positive = drafted earlier now
+    const risers  = movers.filter(m => m.delta >= 1).sort((a, b) => b.delta - a.delta).slice(0, 8);
+    const fallers = movers.filter(m => m.delta <= -1).sort((a, b) => a.delta - b.delta).slice(0, 8);
+    const fmtRow = m => {
+      const sign = m.delta >= 0 ? 'up' : 'down';
+      const arrow = m.delta >= 0 ? '↑' : '↓';
+      return `<div class="rf-row">
+        <span><span class="nm">${m.player.name}</span><div class="meta">${m.player.pos} · ${m.player.team||'—'} · ADP ${m.player.adp.toFixed(1)}</div></span>
+        <span class="delta ${sign}">${arrow} ${Math.abs(m.delta).toFixed(1)}</span>
+      </div>`;
+    };
+    rfEl.innerHTML = `<div class="rf-grid">
+      <div class="rf-col up"><h4>↑ Risers</h4>${risers.length ? risers.map(fmtRow).join('') : '<div class="pempty">None in window.</div>'}</div>
+      <div class="rf-col down"><h4>↓ Fallers</h4>${fallers.length ? fallers.map(fmtRow).join('') : '<div class="pempty">None in window.</div>'}</div>
+    </div>`;
+  }
+
+  // Saved drafts list
+  const listEl = document.getElementById('pDraftList');
+  if(drafts.length === 0){
+    listEl.innerHTML = `<div class="pempty">No saved drafts yet.  Hit <b>Save Draft</b> on the Draft Board after each draft.</div>`;
+  } else {
+    listEl.innerHTML = drafts.map((d, i) => {
+      const when = new Date(d.timestamp).toLocaleString([], {dateStyle:'medium', timeStyle:'short'});
+      const counts = {QB:0, RB:0, WR:0, TE:0};
+      d.players.forEach(pid => {
+        const p = byId[pid];
+        if(p && counts[p.pos] !== undefined) counts[p.pos]++;
+      });
+      const build = `${counts.QB}QB·${counts.RB}RB·${counts.WR}WR·${counts.TE}TE`;
+      return `<div class="pdraft">
+        <span><span class="name">${d.name}</span><div class="meta">${when} · ${d.players.length} picks · ${build}</div></span>
+        <button onclick="deleteDraft(${i})">Delete</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+document.getElementById('savedraft').onclick = saveDraft;
+
 document.addEventListener('click', e=>{
   const star = e.target.closest('[data-star]');
   if(star){ e.stopPropagation(); toggleMine(star.dataset.star); return; }
