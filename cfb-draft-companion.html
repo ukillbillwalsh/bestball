@@ -81,9 +81,35 @@
   .pos-TE{background:rgba(255,176,31,.16);color:var(--accent2)}
 
   /* layout */
-  .draftlayout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
-  .draftmain{min-width:0}
+  .draftlayout{display:grid;grid-template-columns:280px 1fr 320px;gap:14px;align-items:start;grid-template-areas:"left main right"}
+  .draftmain{min-width:0;grid-area:main}
+  .draftside.left{grid-area:left;display:flex;flex-direction:column;gap:14px}
+  .draftside.right{grid-area:right;display:flex;flex-direction:column;gap:14px}
   .draftside{display:flex;flex-direction:column;gap:14px}
+
+  /* Compact suggestion row, reused by Best Available + Best Stacking */
+  .suglist{display:flex;flex-direction:column;gap:3px}
+  .sugrow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:5px;cursor:pointer;background:var(--bg2)}
+  .sugrow:hover{background:rgba(255,255,255,.04)}
+  .sugrow .nm{font-family:var(--disp);font-size:13px;color:var(--ink);font-weight:600}
+  .sugrow .meta{font-size:10px;color:var(--dim);margin-top:1px}
+  .sugrow .rk{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
+  .sugrow .rk .bye{display:block;font-size:9.5px;color:var(--dim);margin-top:1px}
+  .sugrow .rk .bye.conflict{color:var(--accent2);font-weight:600}
+  .sugrow .tag{grid-column:2 / -1;font-size:9px;color:var(--accent);font-weight:600;letter-spacing:.5px;margin-top:1px}
+  .sugempty{font-family:var(--mono);font-size:11px;color:var(--dim);font-style:italic;padding:8px 4px;text-align:center}
+
+  /* Bye Weeks per-position table */
+  .byetable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+  .byetable th,.byetable td{padding:3px 4px;text-align:center;border-bottom:1px solid var(--line)}
+  .byetable th{color:var(--dim);font-weight:500;font-size:9.5px}
+  .byetable td.lbl{text-align:left;color:var(--muted);font-family:var(--disp);font-weight:600;font-size:11px}
+  .byetable td.zero{color:var(--dim)}
+  .byetable td.cell.warn{color:var(--accent2);font-weight:700;background:rgba(255,176,31,.10)}
+  .byetable td.cell.danger{color:var(--red);font-weight:700;background:rgba(255,77,94,.10)}
+  .byetable tr.total td{border-top:1px solid var(--muted);padding-top:5px;font-weight:600;color:var(--ink)}
+  .byetable tr.total td.lbl{color:var(--ink)}
+  .byeempty{font-family:var(--mono);font-size:11px;color:var(--dim);font-style:italic;padding:8px 4px;text-align:center}
   .dpanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
   .dpanel h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:1px;font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:8px}
   .dpanel h3 span{color:var(--accent2);font-family:var(--mono);font-size:13px;background:rgba(255,176,31,.12);padding:2px 8px;border-radius:6px}
@@ -243,10 +269,12 @@
     .rf-grid{grid-template-columns:1fr}
   }
 
-  @media (max-width:900px){
-    .draftlayout{grid-template-columns:1fr}
-    .draftside{order:-1}
+  @media (max-width:1200px){
+    .draftlayout{grid-template-columns:1fr;grid-template-areas:"main" "left" "right"}
+    .draftside.left,.draftside.right{order:initial}
     .rosterlist{max-height:200px}
+  }
+  @media (max-width:900px){
     .topbar{padding:12px 16px;gap:10px}
     main{padding:14px}
   }
@@ -286,6 +314,26 @@
 
 <section class="tab-pane on" data-tab-content="draft">
   <div class="draftlayout">
+    <aside class="draftside left">
+      <div class="dpanel">
+        <h3>My Roster · <span id="rosterCount">0</span></h3>
+        <div class="poscounts" id="poscounts"></div>
+        <div class="rosterlist" id="rosterlist"></div>
+      </div>
+
+      <div class="dpanel">
+        <h3>Best Available</h3>
+        <p class="dnote">Top 5 picks by your rank (or ADP), excluding positions you've already loaded up.  Late-round picks get a soft penalty for bye clusters.</p>
+        <div class="suglist" id="bestavail"></div>
+      </div>
+
+      <div class="dpanel">
+        <h3>Best Stacking</h3>
+        <p class="dnote">Best available teammate for each team where you already have someone, top 5 by their rank.</p>
+        <div class="suglist" id="beststack"></div>
+      </div>
+    </aside>
+
     <div class="draftmain">
       <div class="toolbar">
         <div class="filters" id="dposfilter">
@@ -323,13 +371,7 @@
       <p class="footnote">Tap any row to <b>preview</b> that player's stacking partners. Tap the ★ to mark them <b>yours</b>. Tap <b>+/−</b> to mark them drafted by anyone. Draft state persists in your browser.</p>
     </div>
 
-    <aside class="draftside">
-      <div class="dpanel">
-        <h3>My Roster · <span id="rosterCount">0</span></h3>
-        <div class="poscounts" id="poscounts"></div>
-        <div class="rosterlist" id="rosterlist"></div>
-      </div>
-
+    <aside class="draftside right">
       <div class="dpanel">
         <h3>Stacks</h3>
         <p class="dnote">QB + pass-catcher pairings, plus any team where you own 2+ skill players.</p>
@@ -345,8 +387,8 @@
 
       <div class="dpanel">
         <h3>Bye Weeks</h3>
-        <p class="dnote">Watch for clusters where multiple starters share a bye.</p>
-        <div class="byes" id="byegrid"></div>
+        <p class="dnote">Per-position breakdown across weeks you have picks on.  Cells warn at 2+ (amber) and 3+ (red) of the same position sharing a week.</p>
+        <div id="byegrid"></div>
       </div>
     </aside>
   </div>
@@ -428,7 +470,7 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {"ABILE":2,"AF":3,"AKRON":9,"ALA":9,"ALABA":1,"ALCOR":2,"APP":5,"ARK":8,"ARKAN":2,"ARMY":3,"ASU":4,"AUB":6,"AUSTI":2,"AZ":7,"BALL":9,"BAY":6,"BC":6,"BETHU":2,"BOWLI":10,"BRYAN":2,"BSU":7,"BUCKN":1,"BUFFA":9,"BYU":4,"CAL":10,"CAMPB":1,"CENTR":9,"CHARL":8,"CHATT":1,"CIN":6,"CLEM":6,"COAST":8,"COLGA":1,"COLO":6,"COLOR":6,"DELAW":1,"DUKE":5,"DUQUE":2,"EAST":1,"EASTE":1,"ELON":1,"FLORI":5,"FORDH":3,"FRES":8,"FSU":2,"FURMA":2,"GARDN":1,"GEORG":6,"GRAMB":1,"GT":5,"HAWAI":3,"HOLY":1,"HOU":9,"HOUST":2,"HOWAR":3,"IDAHO":2,"ILL":7,"ILLIN":1,"INCAR":1,"IND":10,"INDIA":2,"IOWA":7,"ISU":7,"JACKS":5,"JAMES":12,"KENNE":5,"KENT":10,"KSU":5,"KU":4,"LAFAY":2,"LAMAR":2,"LIBER":7,"LINDE":1,"LONG":2,"LOU":8,"LOUIS":4,"LSU":9,"MAINE":2,"MARSH":7,"MASSA":9,"MCNEE":1,"MD":8,"MEM":4,"MERCE":1,"MERCY":3,"MERRI":2,"MIA":6,"MIAOH":9,"MICH":6,"MIDDL":6,"MINN":7,"MISS":5,"MISSI":2,"MISSO":5,"MIZ":8,"MONMO":1,"MONTA":1,"MORGA":2,"MSST":6,"MSU":9,"MURRA":2,"NAVY":3,"NCST":7,"ND":8,"NEB":8,"NEVAD":5,"NEW":3,"NICHO":2,"NORFO":3,"NORTH":2,"NW":2,"OHIO":9,"OKST":5,"OLD":11,"ORE":5,"OREGO":8,"OSU":8,"OU":5,"PITT":10,"PORTL":2,"PRAIR":1,"PSU":8,"PUR":8,"RHODE":2,"RICE":9,"RICHM":1,"ROBER":1,"RUT":6,"SACRA":5,"SACRE":1,"SAM":5,"SAMFO":1,"SAN":4,"SCAR":7,"SDSU":10,"SE":2,"SMU":6,"SOUTH":1,"STAN":2,"STONE":1,"STONY":1,"SYR":4,"TAMU":9,"TARLE":2,"TCU":6,"TEMPL":8,"TENN":9,"TENNE":1,"TEX":5,"TEXAS":6,"THE":2,"TOLED":9,"TOWSO":3,"TROY":5,"TTU":6,"TUL":5,"TULSA":9,"UAB":8,"UALBA":2,"UC":1,"UCF":7,"UCLA":5,"UCONN":7,"UF":8,"UGA":8,"UK":9,"UL":6,"UNC":4,"UNLV":3,"USC":7,"UT":2,"UTAH":2,"UTEP":8,"UTSA":9,"UVA":10,"VAN":9,"VILLA":1,"VMI":2,"VT":9,"WAGNE":1,"WAKE":8,"WASHI":10,"WEBER":1,"WEST":3,"WESTE":10,"WILLI":1,"WIS":6,"WOFFO":1,"WSH":8,"WVU":9,"WYOMI":9,"YOUNG":2};
+const BYE_WEEKS = {};
 
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
@@ -538,7 +580,7 @@ function render(){
     body.insertAdjacentHTML('beforeend',
       `<tr><td colspan="9" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${shown.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
   }
-  renderRoster(); renderStacks(); renderPartners(); renderByes();
+  renderRoster(); renderStacks(); renderPartners(); renderByes(); renderBestAvailable(); renderBestStacking();
 }
 
 function renderRoster(){
@@ -705,13 +747,186 @@ function renderPartners(){
 
 function renderByes(){
   const mine = BESTBALL.players.filter(p=>isMine(p.id));
-  const byWeek = {};
-  mine.forEach(p=>{ if(p.bye!=null) byWeek[p.bye] = (byWeek[p.bye]||0)+1; });
-  const weeks = [...Array(14).keys()].map(i=>i+1);
-  document.getElementById('byegrid').innerHTML = weeks.map(w=>{
-    const ct = byWeek[w]||0;
-    const cls = ct>=4 ? 'danger' : ct>=2 ? 'warn' : (ct===0?'empty':'');
-    return `<div class="byecell ${cls}"><div class="wk">W${w}</div><div class="ct">${ct||'—'}</div></div>`;
+  const el   = document.getElementById('byegrid');
+
+  if(mine.length === 0){
+    el.innerHTML = `<div class="byeempty">No picks yet.</div>`;
+    return;
+  }
+
+  // Group counts by week then position
+  const POSES  = ['QB','RB','WR','TE'];
+  const byWeek = {};   // week -> {QB, RB, WR, TE, TOTAL}
+  mine.forEach(p=>{
+    if(p.bye == null) return;
+    if(!byWeek[p.bye]) byWeek[p.bye] = {QB:0, RB:0, WR:0, TE:0, TOTAL:0};
+    if(byWeek[p.bye][p.pos] !== undefined) byWeek[p.bye][p.pos]++;
+    byWeek[p.bye].TOTAL++;
+  });
+
+  const weeks = Object.keys(byWeek).map(Number).sort((a,b)=>a-b);
+  if(weeks.length === 0){
+    el.innerHTML = `<div class="byeempty">No picks have a bye week recorded.</div>`;
+    return;
+  }
+
+  const cellCls = (n, isTotal) => {
+    if(n === 0) return 'cell zero';
+    if(isTotal){
+      if(n >= 4) return 'cell danger';
+      if(n >= 2) return 'cell warn';
+      return 'cell';
+    }
+    // per-position cells
+    if(n >= 3) return 'cell danger';
+    if(n >= 2) return 'cell warn';
+    return 'cell';
+  };
+  const cellText = n => n === 0 ? '·' : n;
+
+  const head = `<tr><th></th>${weeks.map(w=>`<th>W${w}</th>`).join('')}</tr>`;
+  const rows = POSES.map(pos =>
+    `<tr><td class="lbl">${pos}</td>${weeks.map(w => {
+      const n = byWeek[w][pos];
+      return `<td class="${cellCls(n, false)}">${cellText(n)}</td>`;
+    }).join('')}</tr>`
+  ).join('');
+  const total = `<tr class="total"><td class="lbl">Total</td>${weeks.map(w => {
+    const n = byWeek[w].TOTAL;
+    return `<td class="${cellCls(n, true)}">${cellText(n)}</td>`;
+  }).join('')}</tr>`;
+
+  el.innerHTML = `<table class="byetable">${head}${rows}${total}</table>`;
+}
+
+// ================ BEST AVAILABLE ================
+function renderBestAvailable(){
+  const el = document.getElementById('bestavail');
+  const players = BESTBALL.players || [];
+  const drafted = new Set(draftState.drafted);
+  const mine    = players.filter(p=>isMine(p.id));
+
+  // Soft caps - don't suggest more of a position you've already loaded up
+  const POS_CAP = {QB:3, RB:6, WR:9, TE:2};
+  const myPosCt = {QB:0, RB:0, WR:0, TE:0};
+  mine.forEach(p=>{ if(myPosCt[p.pos] !== undefined) myPosCt[p.pos]++; });
+
+  // Bye cluster context for the soft penalty
+  const byeCt = {};
+  mine.forEach(p=>{ if(p.bye != null) byeCt[p.bye] = (byeCt[p.bye]||0) + 1; });
+
+  // Late-draft kicker: penalty grows with roster size
+  const rosterSize = mine.length;
+  const byePenaltyWeight = rosterSize >= 12 ? 30 : rosterSize >= 8 ? 12 : 0;
+
+  const rank = p => p.myRank != null ? p.myRank
+                  : p.adp    != null ? p.adp
+                  : Infinity;
+
+  const candidates = players
+    .filter(p => !drafted.has(p.id) && !isMine(p.id) && rank(p) !== Infinity)
+    .filter(p => !POS_CAP[p.pos] || myPosCt[p.pos] < POS_CAP[p.pos])
+    .map(p => {
+      const base = rank(p);
+      const existingOnBye = p.bye != null ? (byeCt[p.bye] || 0) : 0;
+      let penalty = 0;
+      if(existingOnBye >= 2) penalty = byePenaltyWeight;        // would push to 3+
+      else if(existingOnBye === 1) penalty = byePenaltyWeight / 2;
+      return { p, score: base + penalty, base, existingOnBye };
+    })
+    .sort((a,b) => a.score - b.score)
+    .slice(0, 5);
+
+  if(candidates.length === 0){
+    el.innerHTML = `<div class="sugempty">No available players with rank data.</div>`;
+    return;
+  }
+
+  el.innerHTML = candidates.map(c => {
+    const p = c.p;
+    const rk  = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
+    const byeNote = p.bye == null ? '—' : `W${p.bye}`;
+    const conflict = c.existingOnBye >= 2 ? 'conflict' : '';
+    const title = c.existingOnBye >= 2 ? `would push your bye cluster on W${p.bye} to ${c.existingOnBye + 1}` : '';
+    return `<div class="sugrow" data-star="${p.id}" title="${title}">
+      <span class="posbadge pos-${p.pos}">${p.pos}</span>
+      <span><div class="nm">${p.name}</div><div class="meta">${p.team || '—'}</div></span>
+      <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
+    </div>`;
+  }).join('');
+}
+
+// ================ BEST STACKING ================
+function renderBestStacking(){
+  const el = document.getElementById('beststack');
+  const players = BESTBALL.players || [];
+  const drafted = new Set(draftState.drafted);
+  const mine    = players.filter(p=>isMine(p.id));
+
+  if(mine.length === 0){
+    el.innerHTML = `<div class="sugempty">No picks yet.  Mark someone with ★ to see stacking options here.</div>`;
+    return;
+  }
+
+  const rank = p => p.myRank != null ? p.myRank
+                  : p.adp    != null ? p.adp
+                  : Infinity;
+
+  // Group mine by team; for each team find the best available teammate
+  const myTeams = {};
+  mine.forEach(p => {
+    if(!p.team) return;
+    (myTeams[p.team] = myTeams[p.team] || []).push(p);
+  });
+
+  const byeCt = {};
+  mine.forEach(p=>{ if(p.bye != null) byeCt[p.bye] = (byeCt[p.bye]||0)+1; });
+
+  const suggestions = Object.entries(myTeams).map(([team, picks]) => {
+    const haveQB = picks.some(p=>p.pos === 'QB');
+    const havePass = picks.some(p=>p.pos === 'WR' || p.pos === 'TE');
+
+    const teammates = players
+      .filter(p =>
+        p.team === team &&
+        !drafted.has(p.id) &&
+        !isMine(p.id) &&
+        rank(p) !== Infinity
+      )
+      .sort((a,b) => rank(a) - rank(b));
+
+    if(teammates.length === 0) return null;
+    const best = teammates[0];
+
+    // Tag the stack type for this suggestion
+    let tag = '';
+    if(haveQB && (best.pos === 'WR' || best.pos === 'TE')) tag = 'QB stack';
+    else if(!haveQB && best.pos === 'QB') tag = 'pair the QB';
+    else if(haveQB && best.pos === 'RB') tag = 'team correlation';
+    else if(havePass && (best.pos === 'WR' || best.pos === 'TE')) tag = '2nd skill';
+
+    return { player: best, tag, team, anchor: picks.find(p=>p.pos==='QB') || picks[0] };
+  })
+  .filter(Boolean)
+  .sort((a,b) => rank(a.player) - rank(b.player))
+  .slice(0, 5);
+
+  if(suggestions.length === 0){
+    el.innerHTML = `<div class="sugempty">No available teammates with rank data on your rostered teams.</div>`;
+    return;
+  }
+
+  el.innerHTML = suggestions.map(s => {
+    const p = s.player;
+    const rk  = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
+    const byeNote = p.bye == null ? '—' : `W${p.bye}`;
+    const conflict = (p.bye != null && (byeCt[p.bye] || 0) >= 2) ? 'conflict' : '';
+    const title = `pairs with ${s.anchor.pos} ${s.anchor.name} on ${s.team}`;
+    return `<div class="sugrow" data-star="${p.id}" title="${title}">
+      <span class="posbadge pos-${p.pos}">${p.pos}</span>
+      <span><div class="nm">${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''}</div></span>
+      <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
+    </div>`;
   }).join('');
 }
 
