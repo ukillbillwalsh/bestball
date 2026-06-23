@@ -440,13 +440,17 @@
     <div class="phdr">
       <div>
         <h2>Portfolio</h2>
-        <p>Snapshots of drafts you've completed.  Tap <b>Save Draft</b> on the Draft Board after each draft to add it here.</p>
+        <p>Snapshots of drafts you've completed.  Either tap <b>Save Draft</b> on the Draft Board after each one, or upload your Underdog pick history CSV for the full backlog with real entry fees.</p>
+      </div>
+      <div class="pactionrow">
+        <input type="file" id="uploadCsv" accept=".csv,text/csv" hidden>
+        <button class="chip on" id="uploadCsvBtn">Upload Underdog CSV</button>
       </div>
     </div>
     <div class="pcards">
       <div class="pcard"><div class="plabel">Total Drafts</div><div class="pval" id="pTotalDrafts">0</div></div>
-      <div class="pcard"><div class="plabel">Distinct Players Drafted</div><div class="pval" id="pUniquePlayers">0</div></div>
-      <div class="pcard"><div class="plabel">Distinct Teams</div><div class="pval" id="pUniqueTeams">0</div></div>
+      <div class="pcard"><div class="plabel">Total Entry Fees</div><div class="pval" id="pTotalFees">—</div><div class="psub" id="pTotalFeesSub"></div></div>
+      <div class="pcard"><div class="plabel">Distinct Players</div><div class="pval" id="pUniquePlayers">0</div></div>
       <div class="pcard"><div class="plabel">Top Exposure</div><div class="pval" id="pTopExposure">—</div><div class="psub" id="pTopExposureSub"></div></div>
     </div>
     <div class="psections">
@@ -516,7 +520,7 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {};
+const BYE_WEEKS = {"ABILE":2,"AF":3,"AKRON":9,"ALA":9,"ALABA":1,"ALCOR":2,"APP":5,"ARK":8,"ARKAN":2,"ARMY":3,"ASU":4,"AUB":6,"AUSTI":2,"AZ":7,"BALL":9,"BAY":6,"BC":6,"BETHU":2,"BOWLI":10,"BRYAN":2,"BSU":7,"BUCKN":1,"BUFFA":9,"BYU":4,"CAL":10,"CAMPB":1,"CENTR":9,"CHARL":8,"CHATT":1,"CIN":6,"CLEM":6,"COAST":8,"COLGA":1,"COLO":6,"COLOR":6,"DELAW":1,"DUKE":5,"DUQUE":2,"EAST":1,"EASTE":1,"ELON":1,"FLORI":5,"FORDH":3,"FRES":8,"FSU":2,"FURMA":2,"GARDN":1,"GEORG":6,"GRAMB":1,"GT":5,"HAWAI":3,"HOLY":1,"HOU":9,"HOUST":2,"HOWAR":3,"IDAHO":2,"ILL":7,"ILLIN":1,"INCAR":1,"IND":10,"INDIA":2,"IOWA":7,"ISU":7,"JACKS":5,"JAMES":12,"KENNE":5,"KENT":10,"KSU":5,"KU":4,"LAFAY":2,"LAMAR":2,"LIBER":7,"LINDE":1,"LONG":2,"LOU":8,"LOUIS":4,"LSU":9,"MAINE":2,"MARSH":7,"MASSA":9,"MCNEE":1,"MD":8,"MEM":4,"MERCE":1,"MERCY":3,"MERRI":2,"MIA":6,"MIAOH":9,"MICH":6,"MIDDL":6,"MINN":7,"MISS":5,"MISSI":2,"MISSO":5,"MIZ":8,"MONMO":1,"MONTA":1,"MORGA":2,"MSST":6,"MSU":9,"MURRA":2,"NAVY":3,"NCST":7,"ND":8,"NEB":8,"NEVAD":5,"NEW":3,"NICHO":2,"NORFO":3,"NORTH":2,"NW":2,"OHIO":9,"OKST":5,"OLD":11,"ORE":5,"OREGO":8,"OSU":8,"OU":5,"PITT":10,"PORTL":2,"PRAIR":1,"PSU":8,"PUR":8,"RHODE":2,"RICE":9,"RICHM":1,"ROBER":1,"RUT":6,"SACRA":5,"SACRE":1,"SAM":5,"SAMFO":1,"SAN":4,"SCAR":7,"SDSU":10,"SE":2,"SMU":6,"SOUTH":1,"STAN":2,"STONE":1,"STONY":1,"SYR":4,"TAMU":9,"TARLE":2,"TCU":6,"TEMPL":8,"TENN":9,"TENNE":1,"TEX":5,"TEXAS":6,"THE":2,"TOLED":9,"TOWSO":3,"TROY":5,"TTU":6,"TUL":5,"TULSA":9,"UAB":8,"UALBA":2,"UC":1,"UCF":7,"UCLA":5,"UCONN":7,"UF":8,"UGA":8,"UK":9,"UL":6,"UNC":4,"UNLV":3,"USC":7,"UT":2,"UTAH":2,"UTEP":8,"UTSA":9,"UVA":10,"VAN":9,"VILLA":1,"VMI":2,"VT":9,"WAGNE":1,"WAKE":8,"WASHI":10,"WEBER":1,"WEST":3,"WESTE":10,"WILLI":1,"WIS":6,"WOFFO":1,"WSH":8,"WVU":9,"WYOMI":9,"YOUNG":2};
 
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
@@ -1114,8 +1118,19 @@ function renderPortfolio(){
   const allIds  = drafts.flatMap(d=>d.players);
   const unique  = new Set(allIds);
   document.getElementById('pUniquePlayers').textContent = unique.size;
-  const teams = new Set([...unique].map(id => byId[id]?.team).filter(Boolean));
-  document.getElementById('pUniqueTeams').textContent = teams.size;
+
+  // Total Entry Fees (from Underdog CSV imports)
+  const feeDrafts = drafts.filter(d => typeof d.entryFee === 'number' && d.entryFee > 0);
+  const totalFees = feeDrafts.reduce((s, d) => s + d.entryFee, 0);
+  const pFeesEl = document.getElementById('pTotalFees');
+  const pFeesSubEl = document.getElementById('pTotalFeesSub');
+  if(feeDrafts.length === 0){
+    pFeesEl.textContent = '—';
+    pFeesSubEl.textContent = 'upload Underdog CSV to track';
+  } else {
+    pFeesEl.textContent = '$' + totalFees.toFixed(2);
+    pFeesSubEl.textContent = `${feeDrafts.length} draft${feeDrafts.length!==1?'s':''} with fees`;
+  }
 
   // Exposures
   const exposureCt = {};
@@ -1239,23 +1254,201 @@ function renderPortfolio(){
   // Saved drafts list
   const listEl = document.getElementById('pDraftList');
   if(drafts.length === 0){
-    listEl.innerHTML = `<div class="pempty">No saved drafts yet.  Hit <b>Save Draft</b> on the Draft Board after each draft.</div>`;
+    listEl.innerHTML = `<div class="pempty">No saved drafts yet.  Hit <b>Save Draft</b> on the Draft Board or upload your Underdog CSV above.</div>`;
   } else {
-    listEl.innerHTML = drafts.map((d, i) => {
-      const when = new Date(d.timestamp).toLocaleString([], {dateStyle:'medium', timeStyle:'short'});
+    // Sort by timestamp descending (newest first)
+    const sorted = drafts.map((d, i) => ({d, i}))
+      .sort((a, b) => (b.d.timestamp || '').localeCompare(a.d.timestamp || ''));
+    listEl.innerHTML = sorted.map(({d, i}) => {
+      const when = d.timestamp ? new Date(d.timestamp).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
       const counts = {QB:0, RB:0, WR:0, TE:0};
       d.players.forEach(pid => {
         const p = byId[pid];
         if(p && counts[p.pos] !== undefined) counts[p.pos]++;
       });
       const build = `${counts.QB}QB·${counts.RB}RB·${counts.WR}WR·${counts.TE}TE`;
+      const srcBadge = d.source === 'underdog_csv'
+        ? '<span style="font-size:9px;background:rgba(255,90,31,.2);color:var(--accent);padding:1px 5px;border-radius:3px;margin-left:6px;font-family:var(--mono);font-weight:600;letter-spacing:.5px">UD</span>'
+        : '';
+      const feeNote = (typeof d.entryFee === 'number' && d.entryFee > 0)
+        ? ` · $${d.entryFee.toFixed(2)}`
+        : '';
+      const unmatchedNote = (d.unmatchedNames && d.unmatchedNames.length)
+        ? ` · <span style="color:var(--accent2)">${d.unmatchedNames.length} unmatched</span>`
+        : '';
       return `<div class="pdraft">
-        <span><span class="name">${d.name}</span><div class="meta">${when} · ${d.players.length} picks · ${build}</div></span>
+        <span><span class="name">${d.name}</span>${srcBadge}<div class="meta">${when} · ${d.players.length} picks · ${build}${feeNote}${unmatchedNote}</div></span>
         <button onclick="deleteDraft(${i})">Delete</button>
       </div>`;
     }).join('');
   }
 }
+
+// ================ UNDERDOG CSV IMPORT ================
+function parseCSV(text){
+  // Simple CSV parser, handles quoted fields with commas and escaped quotes
+  const rows = [];
+  let cur = '', inQuotes = false, row = [];
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ cur += '"'; i++; }
+        else { inQuotes = false; }
+      } else { cur += c; }
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(cur); cur = ''; }
+      else if(c === '\n'){ row.push(cur); cur = ''; rows.push(row); row = []; }
+      else if(c === '\r'){ /* skip */ }
+      else cur += c;
+    }
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function parseUnderdogCSV(text){
+  const rows = parseCSV(text);
+  if(rows.length < 2) return [];
+  const header = rows[0];
+  const cols = {};
+  header.forEach((c, i) => { cols[c.trim()] = i; });
+  // Required columns
+  if(cols['Draft'] === undefined || cols['First Name'] === undefined){
+    throw new Error('Not a recognized Underdog pick history CSV');
+  }
+  // Group rows by Draft id
+  const byDraft = {};
+  for(let i = 1; i < rows.length; i++){
+    const r = rows[i];
+    const draftId = r[cols['Draft']];
+    if(!draftId) continue;
+    if(!byDraft[draftId]){
+      byDraft[draftId] = {
+        draftId,
+        firstSeen: r[cols['Picked At']] || '',
+        tournamentTitle: (r[cols['Tournament Title']] || '').trim(),
+        tournament:      r[cols['Tournament']] || '',
+        entryFee:  parseFloat(r[cols['Tournament Entry Fee']] || r[cols['Draft Entry Fee']] || '0') || 0,
+        draftSize: parseInt(r[cols['Draft Size']] || '0', 10) || null,
+        tournamentSize: parseInt(r[cols['Tournament Size']] || '0', 10) || null,
+        totalPrizes: parseFloat(r[cols['Tournament Total Prizes']] || '0') || null,
+        rawPicks: [],
+      };
+    }
+    byDraft[draftId].rawPicks.push({
+      pickNumber: parseInt(r[cols['Pick Number']] || '0', 10) || null,
+      pickedAt:   r[cols['Picked At']] || '',
+      firstName:  r[cols['First Name']] || '',
+      lastName:   r[cols['Last Name']] || '',
+      team:       r[cols['Team']] || '',
+      position:   r[cols['Position']] || '',
+    });
+  }
+  // Sort each draft's picks by pick number; use earliest pickedAt as draft timestamp
+  Object.values(byDraft).forEach(d => {
+    d.rawPicks.sort((a, b) => (a.pickNumber || 0) - (b.pickNumber || 0));
+    d.firstPickAt = d.rawPicks[0]?.pickedAt || d.firstSeen;
+  });
+  return Object.values(byDraft);
+}
+
+function matchUnderdogPick(pick, nameIndex){
+  const full = `${pick.firstName} ${pick.lastName}`.trim();
+  const k = normalizeName(full);
+  const candidates = nameIndex[k] || [];
+  if(candidates.length === 0) return null;
+  if(candidates.length === 1) return candidates[0];
+  // Disambiguate by team + position first, then team, then position
+  const byBoth = candidates.find(p => p.team === pick.team && p.pos === pick.position);
+  if(byBoth) return byBoth;
+  const byTeam = candidates.find(p => p.team === pick.team);
+  if(byTeam) return byTeam;
+  const byPos  = candidates.find(p => p.pos === pick.position);
+  if(byPos) return byPos;
+  return candidates[0];
+}
+
+function importUnderdogCSVText(text){
+  let parsed;
+  try {
+    parsed = parseUnderdogCSV(text);
+  } catch(e){
+    alert(`Could not parse the CSV: ${e.message}.  Make sure you've exported the pick history from your Underdog account.`);
+    return;
+  }
+  if(parsed.length === 0){
+    alert('No drafts found in that CSV.');
+    return;
+  }
+
+  const nameIndex = buildNameIndex();
+  let totalMatched = 0, totalUnmatched = 0;
+  const newDrafts = parsed.map(d => {
+    const players = [];
+    const unmatched = [];
+    d.rawPicks.forEach(pick => {
+      const player = matchUnderdogPick(pick, nameIndex);
+      if(player){
+        players.push(player.id);
+        totalMatched++;
+      } else {
+        unmatched.push(`${pick.firstName} ${pick.lastName} (${pick.position} ${pick.team})`);
+        totalUnmatched++;
+      }
+    });
+    return {
+      source: 'underdog_csv',
+      draftId: d.draftId,
+      timestamp: d.firstPickAt,
+      name: d.tournamentTitle || 'Underdog Draft',
+      tournamentTitle: d.tournamentTitle,
+      entryFee: d.entryFee,
+      draftSize: d.draftSize,
+      tournamentSize: d.tournamentSize,
+      totalPrizes: d.totalPrizes,
+      players,
+      unmatchedNames: unmatched,
+    };
+  });
+
+  // Merge with existing portfolio, dedupe by draftId (CSV uploads replace prior version)
+  const existing = loadDrafts();
+  const existingById = new Map();
+  existing.forEach((d, idx) => {
+    const key = d.draftId || `manual-${idx}`;
+    existingById.set(key, d);
+  });
+  let added = 0, replaced = 0;
+  newDrafts.forEach(d => {
+    if(existingById.has(d.draftId)) replaced++;
+    else added++;
+    existingById.set(d.draftId, d);
+  });
+  const merged = Array.from(existingById.values());
+  persistDrafts(merged);
+
+  alert(
+    `Imported ${parsed.length} draft${parsed.length!==1?'s':''} ` +
+    `(${added} new, ${replaced} updated).\n` +
+    `Matched ${totalMatched} player picks, ${totalUnmatched} unmatched.` +
+    (totalUnmatched > 0 ? '\n\nUnmatched names appear on each draft row in the Saved Drafts list.' : '')
+  );
+  renderPortfolio();
+}
+
+// Wire up file input + button
+document.getElementById('uploadCsvBtn').onclick = () => document.getElementById('uploadCsv').click();
+document.getElementById('uploadCsv').onchange = e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => importUnderdogCSVText(ev.target.result);
+  reader.onerror = () => alert('Could not read the file.');
+  reader.readAsText(file);
+  e.target.value = '';  // allow re-uploading the same file
+};
 
 document.getElementById('savedraft').onclick = saveDraft;
 
