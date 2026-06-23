@@ -110,6 +110,23 @@
   .byetable tr.total td{border-top:1px solid var(--muted);padding-top:5px;font-weight:600;color:var(--ink)}
   .byetable tr.total td.lbl{color:var(--ink)}
   .byeempty{font-family:var(--mono);font-size:11px;color:var(--dim);font-style:italic;padding:8px 4px;text-align:center}
+
+  /* ============ Sync Drafted modal ============ */
+  .sync-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px}
+  .sync-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px)}
+  .sync-box{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .sync-box h3{margin:0 0 6px;font-size:17px;letter-spacing:-.3px}
+  .sync-bookmarklet-wrap{background:var(--bg2);padding:11px 14px;border-radius:8px;margin:10px 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px dashed var(--line)}
+  .bookmarklet-link{background:var(--accent);color:#1a0f08;padding:7px 13px;border-radius:6px;font-family:var(--disp);font-weight:700;font-size:12px;text-decoration:none;letter-spacing:.5px;display:inline-block;cursor:grab;white-space:nowrap}
+  .bookmarklet-link:hover{filter:brightness(1.1)}
+  #syncInput{width:100%;height:130px;background:var(--bg2);border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:6px;font-family:var(--mono);font-size:12px;resize:vertical;margin-bottom:10px;box-sizing:border-box;line-height:1.5}
+  .sync-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .sync-result{margin-top:14px;font-family:var(--mono);font-size:12px;line-height:1.6}
+  .sync-result .ok{color:var(--green);font-weight:600;font-family:var(--disp)}
+  .sync-result .warn{color:var(--accent2);font-weight:600;font-family:var(--disp)}
+  .sync-result .err{color:var(--red);font-weight:600;font-family:var(--disp)}
+  .sync-result ul{margin:4px 0 8px 18px;padding:0;color:var(--muted)}
+  .sync-result li{font-size:11px;padding:1px 0}
   .dpanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
   .dpanel h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:1px;font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:8px}
   .dpanel h3 span{color:var(--accent2);font-family:var(--mono);font-size:13px;background:rgba(255,176,31,.12);padding:2px 8px;border-radius:6px}
@@ -347,6 +364,7 @@
         <button class="chip on" id="hidedrafted">Hide drafted</button>
         <button class="chip" id="hideunranked">Hide unranked</button>
         <div class="spacer"></div>
+        <button class="chip" id="syncbtn" title="Bulk-mark drafted players from your Underdog draft tab">Sync Drafted</button>
         <button class="chip" id="savedraft" title="Snapshot your current roster to your Portfolio">Save Draft</button>
         <button class="chip reset-btn" id="resetdraft">Reset draft</button>
       </div>
@@ -462,6 +480,34 @@
 </section>
 
 </main>
+
+<!-- Sync Drafted modal -->
+<div id="syncModal" class="sync-modal" style="display:none">
+  <div class="sync-overlay" id="syncOverlay"></div>
+  <div class="sync-box">
+    <h3>Sync Drafted from Underdog</h3>
+    <p class="dnote">Auto-marks every drafted name from your Underdog draft tab.  Two-click workflow once the bookmarklet is installed.</p>
+
+    <div class="sync-bookmarklet-wrap">
+      <span class="dnote"><b>Step 1 (one-time):</b> Drag this to your bookmarks bar →</span>
+      <a class="bookmarklet-link"
+         href="javascript:(function(){var d=document.querySelectorAll('div[class*=bottomHalf]');var n=Array.from(d).map(function(x){return x.textContent.trim()}).filter(Boolean);navigator.clipboard.writeText(n.join('\n')).then(function(){alert('Copied '+n.length+' names. Paste into your CFB draft companion.')}).catch(function(){prompt('Copy this list:',n.join('\n'))})})();"
+         onclick="alert('Drag this link to your bookmarks bar — it only works on the Underdog draft page.'); return false;"
+         draggable="true">📋 Underdog → Companion</a>
+    </div>
+    <div class="dnote" style="margin-bottom:14px"><b>Step 2:</b> On the Underdog draft page, click that bookmark.  It copies all drafted names to your clipboard.  <b>Step 3:</b> Come back here and tap <b>Paste from Clipboard</b> below, then <b>Mark Drafted</b>.</div>
+
+    <textarea id="syncInput" placeholder="One name per line — or use the Paste button below."></textarea>
+
+    <div class="sync-actions">
+      <button class="chip" id="syncPaste">Paste from Clipboard</button>
+      <button class="chip on" id="syncApply">Mark Drafted</button>
+      <button class="chip" id="syncCancel">Close</button>
+    </div>
+
+    <div class="sync-result" id="syncResult"></div>
+  </div>
+</div>
 
 <script>
 const DATA_URL = (typeof window!=='undefined' && window.BESTBALL_URL) || './bestball.json';
@@ -1212,6 +1258,132 @@ function renderPortfolio(){
 }
 
 document.getElementById('savedraft').onclick = saveDraft;
+
+// ================ SYNC DRAFTED FROM UNDERDOG ================
+function normalizeName(name){
+  if(!name) return '';
+  let n = name.toLowerCase().trim();
+  n = n.replace(/[^a-z0-9 ]/g, '');               // strip punctuation, keep spaces
+  let parts = n.split(/\s+/).filter(Boolean);
+  if(parts.length && ['jr','sr','ii','iii','iv'].includes(parts[parts.length-1])){
+    parts = parts.slice(0, -1);
+  }
+  return parts.join('');
+}
+
+function buildNameIndex(){
+  const idx = {};
+  (BESTBALL.players || []).forEach(p=>{
+    const k = normalizeName(p.name);
+    if(!k) return;
+    (idx[k] = idx[k] || []).push(p);
+  });
+  return idx;
+}
+
+function openSyncModal(){
+  document.getElementById('syncModal').style.display = '';
+  document.getElementById('syncResult').innerHTML = '';
+  setTimeout(()=> document.getElementById('syncInput').focus(), 50);
+}
+function closeSyncModal(){
+  document.getElementById('syncModal').style.display = 'none';
+}
+
+async function syncPasteFromClipboard(){
+  try{
+    const text = await navigator.clipboard.readText();
+    if(!text || !text.trim()){
+      alert('Clipboard is empty.  Run the bookmarklet on the Underdog draft page first.');
+      return;
+    }
+    document.getElementById('syncInput').value = text;
+  } catch(e){
+    alert('Could not read clipboard (the browser may have blocked it).  Paste manually into the textarea instead — Ctrl+V or right-click → Paste.');
+  }
+}
+
+function syncApplyDrafted(){
+  const text = document.getElementById('syncInput').value;
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const resultEl = document.getElementById('syncResult');
+
+  if(lines.length === 0){
+    resultEl.innerHTML = `<span class="warn">Nothing to sync.</span>  Paste names first.`;
+    return;
+  }
+
+  const idx = buildNameIndex();
+  const matched   = [];
+  const ambiguous = [];
+  const unmatched = [];
+
+  for(const line of lines){
+    const k = normalizeName(line);
+    if(!k) continue;
+    const players = idx[k];
+    if(!players){
+      unmatched.push(line);
+    } else if(players.length === 1){
+      matched.push(players[0]);
+    } else {
+      // Disambiguation: prefer the (still-undrafted) one — they're the more
+      // likely target.  If only one is still undrafted, mark them.
+      const undrafted = players.filter(p => !draftState.drafted.includes(p.id) && !isMine(p.id));
+      if(undrafted.length === 1){
+        matched.push(undrafted[0]);
+      } else {
+        ambiguous.push({line, options: players});
+      }
+    }
+  }
+
+  // Apply: anything that isn't already drafted or yours
+  let newDrafted = 0, alreadyMarked = 0;
+  matched.forEach(p=>{
+    if(draftState.drafted.includes(p.id) || isMine(p.id)){
+      alreadyMarked++;
+    } else {
+      draftState.drafted.push(p.id);
+      newDrafted++;
+    }
+  });
+  saveState();
+  render();
+
+  // Result UI
+  let html = '';
+  html += `<span class="ok">✓ Marked ${newDrafted} new player${newDrafted!==1?'s':''} drafted</span>`;
+  if(alreadyMarked > 0){
+    html += `<span style="color:var(--dim)">  ·  ${alreadyMarked} already marked</span>`;
+  }
+  if(ambiguous.length > 0){
+    html += `<div style="margin-top:8px"><span class="warn">${ambiguous.length} ambiguous</span> · need disambiguation:</div><ul>`;
+    ambiguous.forEach(a=>{
+      const opts = a.options.map(p => `${p.name} (${p.team || '—'})`).join(', ');
+      html += `<li><b>${a.line}</b> → ${opts}</li>`;
+    });
+    html += `</ul>`;
+  }
+  if(unmatched.length > 0){
+    html += `<div style="margin-top:8px"><span class="err">${unmatched.length} unmatched</span> · not in current pool:</div><ul>`;
+    unmatched.forEach(u => { html += `<li>${u}</li>`; });
+    html += `</ul>`;
+  }
+  resultEl.innerHTML = html;
+}
+
+document.getElementById('syncbtn').onclick = openSyncModal;
+document.getElementById('syncCancel').onclick = closeSyncModal;
+document.getElementById('syncOverlay').onclick = closeSyncModal;
+document.getElementById('syncPaste').onclick = syncPasteFromClipboard;
+document.getElementById('syncApply').onclick = syncApplyDrafted;
+// Esc closes the modal
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && document.getElementById('syncModal').style.display !== 'none'){
+    closeSyncModal();
+  }
+});
 
 document.addEventListener('click', e=>{
   const star = e.target.closest('[data-star]');
