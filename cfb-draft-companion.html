@@ -155,6 +155,8 @@
   .draft-btn:hover{color:var(--ink);border-color:var(--muted);background:var(--bg2)}
   .draft-btn.on{background:rgba(255,77,94,.15);color:var(--red);border-color:rgba(255,77,94,.5)}
   .pname-d{font-family:var(--disp);font-weight:600;font-size:15px}
+  .team-logo{display:inline-block;width:18px;height:18px;vertical-align:middle;margin-right:6px;object-fit:contain;flex-shrink:0}
+  .team-logo.sm{width:14px;height:14px;margin-right:4px}
   .adp-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
   .star-btn{background:transparent;border:1px solid var(--line2);color:var(--dim);font-size:14px;padding:3px 8px;border-radius:6px;cursor:pointer;line-height:1;transition:.12s}
   .star-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -520,7 +522,18 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {"ABILE":2,"AF":3,"AKRON":9,"ALA":9,"ALABA":1,"ALCOR":2,"APP":5,"ARK":8,"ARKAN":2,"ARMY":3,"ASU":4,"AUB":6,"AUSTI":2,"AZ":7,"BALL":9,"BAY":6,"BC":6,"BETHU":2,"BOWLI":10,"BRYAN":2,"BSU":7,"BUCKN":1,"BUFFA":9,"BYU":4,"CAL":10,"CAMPB":1,"CENTR":9,"CHARL":8,"CHATT":1,"CIN":6,"CLEM":6,"COAST":8,"COLGA":1,"COLO":6,"COLOR":6,"DELAW":1,"DUKE":5,"DUQUE":2,"EAST":1,"EASTE":1,"ELON":1,"FLORI":5,"FORDH":3,"FRES":8,"FSU":2,"FURMA":2,"GARDN":1,"GEORG":6,"GRAMB":1,"GT":5,"HAWAI":3,"HOLY":1,"HOU":9,"HOUST":2,"HOWAR":3,"IDAHO":2,"ILL":7,"ILLIN":1,"INCAR":1,"IND":10,"INDIA":2,"IOWA":7,"ISU":7,"JACKS":5,"JAMES":12,"KENNE":5,"KENT":10,"KSU":5,"KU":4,"LAFAY":2,"LAMAR":2,"LIBER":7,"LINDE":1,"LONG":2,"LOU":8,"LOUIS":4,"LSU":9,"MAINE":2,"MARSH":7,"MASSA":9,"MCNEE":1,"MD":8,"MEM":4,"MERCE":1,"MERCY":3,"MERRI":2,"MIA":6,"MIAOH":9,"MICH":6,"MIDDL":6,"MINN":7,"MISS":5,"MISSI":2,"MISSO":5,"MIZ":8,"MONMO":1,"MONTA":1,"MORGA":2,"MSST":6,"MSU":9,"MURRA":2,"NAVY":3,"NCST":7,"ND":8,"NEB":8,"NEVAD":5,"NEW":3,"NICHO":2,"NORFO":3,"NORTH":2,"NW":2,"OHIO":9,"OKST":5,"OLD":11,"ORE":5,"OREGO":8,"OSU":8,"OU":5,"PITT":10,"PORTL":2,"PRAIR":1,"PSU":8,"PUR":8,"RHODE":2,"RICE":9,"RICHM":1,"ROBER":1,"RUT":6,"SACRA":5,"SACRE":1,"SAM":5,"SAMFO":1,"SAN":4,"SCAR":7,"SDSU":10,"SE":2,"SMU":6,"SOUTH":1,"STAN":2,"STONE":1,"STONY":1,"SYR":4,"TAMU":9,"TARLE":2,"TCU":6,"TEMPL":8,"TENN":9,"TENNE":1,"TEX":5,"TEXAS":6,"THE":2,"TOLED":9,"TOWSO":3,"TROY":5,"TTU":6,"TUL":5,"TULSA":9,"UAB":8,"UALBA":2,"UC":1,"UCF":7,"UCLA":5,"UCONN":7,"UF":8,"UGA":8,"UK":9,"UL":6,"UNC":4,"UNLV":3,"USC":7,"UT":2,"UTAH":2,"UTEP":8,"UTSA":9,"UVA":10,"VAN":9,"VILLA":1,"VMI":2,"VT":9,"WAGNE":1,"WAKE":8,"WASHI":10,"WEBER":1,"WEST":3,"WESTE":10,"WILLI":1,"WIS":6,"WOFFO":1,"WSH":8,"WVU":9,"WYOMI":9,"YOUNG":2};
+const BYE_WEEKS = {};
+
+// TEAM_LOGOS is baked in by fetch_team_logos.py.  Keys are team abbreviations
+// matching the `team` field in bestball.json; values are ESPN CDN URLs.
+const TEAM_LOGOS = {};
+
+function teamLogo(team, sm){
+  if(!team || !TEAM_LOGOS[team]) return '';
+  const cls = sm ? 'team-logo sm' : 'team-logo';
+  // onerror hides broken/missing logos gracefully; loading=lazy defers offscreen loads
+  return `<img src="${TEAM_LOGOS[team]}" class="${cls}" alt="${team}" loading="lazy" onerror="this.style.display='none'">`;
+}
 
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
@@ -617,7 +630,7 @@ function render(){
       <td><button class="star-btn ${starOn}" data-star="${p.id}" title="Mark as mine">★</button></td>
       <td><button class="draft-btn ${dOn}" data-draft="${p.id}" title="Mark drafted">${dSym}</button></td>
       <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
-      <td class="l"><span class="pname-d">${p.name}</span></td>
+      <td class="l">${teamLogo(p.team)}<span class="pname-d">${p.name}</span></td>
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
       <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${p.team||'—'}</td>
       <td class="num">${p.proj==null?'—':p.proj}</td>
@@ -652,7 +665,7 @@ function renderRoster(){
     ? `<div class="rosterempty">No picks yet.  Tap the ★ on any player to add them.</div>`
     : sorted.map(p=>`<div class="ritem">
         <span class="ri-pos pos-${p.pos}">${p.pos}</span>
-        <span class="ri-name">${p.name}</span>
+        <span class="ri-name">${teamLogo(p.team, true)}${p.name}</span>
         <span class="ri-team">${p.team||''}</span>
         <span class="ri-bye">${p.bye==null?'':'W'+p.bye}</span>
       </div>`).join('');
@@ -779,7 +792,7 @@ function renderPartners(){
 
     return `<div class="partner-row" data-star="${p.id}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span class="nm">${p.name}</span>
+      <span class="nm">${teamLogo(p.team, true)}${p.name}</span>
       <span class="adp">${rk}</span>
       <span class="bye ${conflict}" title="${byeTitle}">${byeNote}</span>
       ${tag ? `<span class="stk-tag">${tag.toUpperCase()}</span>` : ''}
@@ -900,7 +913,7 @@ function renderBestAvailable(){
     const title = c.existingOnBye >= 2 ? `would push your bye cluster on W${p.bye} to ${c.existingOnBye + 1}` : '';
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span><div class="nm">${p.name}</div><div class="meta">${p.team || '—'}</div></span>
+      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${p.team || '—'}</div></span>
       <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
     </div>`;
   }).join('');
@@ -974,7 +987,7 @@ function renderBestStacking(){
     const title = `pairs with ${s.anchor.pos} ${s.anchor.name} on ${s.team}`;
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span><div class="nm">${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''}</div></span>
+      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''}</div></span>
       <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
     </div>`;
   }).join('');
@@ -1052,11 +1065,11 @@ function renderValueStacks(){
   body.innerHTML = stacks.map(s => `
     <tr>
       <td class="l">
-        <div class="pname-d">${s.qb.name}</div>
+        <div>${teamLogo(s.qb.team)}<span class="pname-d">${s.qb.name}</span></div>
         <div class="meta">${s.qb.team} · ADP ${s.qb.adp.toFixed(1)}</div>
       </td>
       <td class="l">
-        <span class="posbadge pos-${s.primary.pos}" style="margin-right:6px">${s.primary.pos}</span>
+        ${teamLogo(s.primary.team)}<span class="posbadge pos-${s.primary.pos}" style="margin-right:6px">${s.primary.pos}</span>
         <span class="pname-d">${s.primary.name}</span>
         <div class="meta">ADP ${s.primary.adp.toFixed(1)}${s.secondary ? ` · also ${s.secondary.name} (ADP ${s.secondary.adp.toFixed(1)})` : ''}</div>
       </td>
