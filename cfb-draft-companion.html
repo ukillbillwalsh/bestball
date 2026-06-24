@@ -497,7 +497,7 @@
     <div class="sync-bookmarklet-wrap">
       <span class="dnote"><b>Step 1 (one-time):</b> Drag this to your bookmarks bar →</span>
       <a class="bookmarklet-link"
-         href="javascript:(function(){var d=document.querySelectorAll('div[class*=bottomHalf]');var n=Array.from(d).map(function(x){return x.textContent.trim()}).filter(Boolean);navigator.clipboard.writeText(n.join('\n')).then(function(){alert('Copied '+n.length+' names. Paste into your CFB draft companion.')}).catch(function(){prompt('Copy this list:',n.join('\n'))})})();"
+         href="javascript:(function(){var d=document.querySelectorAll('div[class*=bottomHalf]');var P=/^[A-Z](?:\.[A-Z])*\.\s+.+?(QB|RB|WR|TE|K|D\/ST)[\s\-\u00b7]+[A-Z]+\s*$/;var n=Array.from(d).map(function(x){return x.textContent.trim().replace(/\s+/g,' ')}).filter(function(t){return t&&P.test(t)});if(n.length===0){alert('No drafted picks found.  Make sure you are on the Underdog draft page with picks visible.');return}navigator.clipboard.writeText(n.join('\n')).then(function(){alert('Copied '+n.length+' picks.  Paste into your CFB draft companion.')}).catch(function(){prompt('Copy this list:',n.join('\n'))})})();"
          onclick="alert('Drag this link to your bookmarks bar — it only works on the Underdog draft page.'); return false;"
          draggable="true">📋 Underdog → Companion</a>
     </div>
@@ -526,7 +526,7 @@ const BYE_WEEKS = {};
 
 // TEAM_LOGOS is baked in by fetch_team_logos.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json; values are ESPN CDN URLs.
-const TEAM_LOGOS = {"AF":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2005.png","AKRON":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2006.png","ALA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/333.png","APP":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2026.png","ARK":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/8.png","ARKAN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2032.png","ARMY":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/349.png","ASU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/9.png","AUB":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2.png","AZ":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/12.png","BALL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2050.png","BAY":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/239.png","BC":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/103.png","BOWLI":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/189.png","BSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png","BUFFA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2084.png","BYU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/252.png","CAL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/25.png","CENTR":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2117.png","CHARL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2429.png","CIN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2132.png","CLEM":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/228.png","COAST":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/324.png","COLO":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/38.png","COLOR":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/36.png","DELAW":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/48.png","DUKE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/150.png","EAST":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/151.png","EASTE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2199.png","FLORI":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2229.png","FRES":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/278.png","FSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/52.png","GEORG":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2247.png","GT":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/59.png","HAWAI":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/62.png","HOU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/248.png","ILL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/356.png","IND":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/84.png","IOWA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2294.png","ISU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/66.png","JACKS":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/55.png","JAMES":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/256.png","KENNE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/338.png","KENT":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2309.png","KSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2306.png","KU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2305.png","LIBER":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2335.png","LOU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/97.png","LOUIS":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2348.png","LSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/99.png","MARSH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/276.png","MASSA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/113.png","MD":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/120.png","MEM":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/235.png","MIA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2390.png","MIAOH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/193.png","MICH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/130.png","MIDDL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2393.png","MINN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/135.png","MISS":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/145.png","MISSO":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2623.png","MIZ":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/142.png","MSST":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/344.png","MSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/127.png","NAVY":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2426.png","NCST":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/152.png","ND":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/87.png","NEB":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/158.png","NEVAD":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2440.png","NEW":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/166.png","NORTH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/249.png","NW":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/77.png","OHIO":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/195.png","OKST":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/197.png","OLD":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/295.png","ORE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2483.png","OREGO":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/204.png","OSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/194.png","OU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/201.png","PITT":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/221.png","PSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/213.png","PUR":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2509.png","RICE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/242.png","RUT":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/164.png","SACRA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/16.png","SAM":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2534.png","SAN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/23.png","SCAR":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2579.png","SDSU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/21.png","SMU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2567.png","SOUTH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/58.png","STAN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/24.png","SYR":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/183.png","TAMU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/245.png","TCU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2628.png","TEMPL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/218.png","TENN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2633.png","TEX":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/251.png","TEXAS":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/326.png","TOLED":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2649.png","TROY":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2653.png","TTU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2641.png","TUL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2655.png","TULSA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/202.png","UAB":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/5.png","UCF":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2116.png","UCLA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/26.png","UCONN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/41.png","UF":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/57.png","UGA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/61.png","UK":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/96.png","UL":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2433.png","UNC":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/153.png","UNLV":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2439.png","USC":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/30.png","UTAH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/328.png","UTEP":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2638.png","UTSA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2636.png","UVA":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/258.png","VAN":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/238.png","VT":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/259.png","WAKE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/154.png","WASHI":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/265.png","WESTE":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2711.png","WIS":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/275.png","WSH":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/264.png","WVU":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/277.png","WYOMI":"https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2751.png"};
+const TEAM_LOGOS = {};
 
 function teamLogo(team, sm){
   if(!team || !TEAM_LOGOS[team]) return '';
@@ -1487,6 +1487,70 @@ function buildNameIndex(){
   return idx;
 }
 
+// Extract the actual last name from "First Middle Last [Jr/Sr/III]"
+function extractLastName(fullName){
+  if(!fullName) return '';
+  let parts = fullName.trim().split(/\s+/);
+  const suffixes = ['jr','sr','ii','iii','iv'];
+  if(parts.length > 1){
+    const tail = parts[parts.length-1].toLowerCase().replace(/\./g, '');
+    if(suffixes.includes(tail)) parts = parts.slice(0, -1);
+  }
+  return parts[parts.length - 1] || '';
+}
+
+function lastNameKey(s){
+  return (s || '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+function buildLastNameIndex(){
+  const idx = {};
+  (BESTBALL.players || []).forEach(p=>{
+    const key = lastNameKey(extractLastName(p.name));
+    if(!key) return;
+    (idx[key] = idx[key] || []).push(p);
+  });
+  return idx;
+}
+
+// Parse Underdog's packed format: "K. LacyRB - MISS" → {initial:"K", lastName:"Lacy", pos:"RB", team:"MISS"}
+// Also tolerates: multi-letter initials ("A.J. Brown..."), middle/Jr in last name,
+// and either hyphen or middle-dot as separator.
+const PICK_REGEX = /^([A-Z](?:\.[A-Z])*)\.\s+(.+?)(QB|RB|WR|TE|K|D\/ST)[\s\-\u00b7]+([A-Z]+)\s*$/;
+function parseDraftedLine(line){
+  if(!line) return null;
+  const m = line.trim().replace(/\s+/g, ' ').match(PICK_REGEX);
+  if(!m) return null;
+  return { initial: m[1], lastName: m[2].trim(), pos: m[3], team: m[4], raw: line };
+}
+
+// Score-based match: team > position > first-initial.  Returns the best player,
+// or null if no last-name candidates at all.
+function matchParsedPick(parsed, lastIdx){
+  const lastClean = extractLastName(parsed.lastName);   // strips trailing Jr/Sr/II/III
+  const candidates = lastIdx[lastNameKey(lastClean)] || [];
+  if(candidates.length === 0) return null;
+  if(candidates.length === 1) return candidates[0];
+
+  const initialChar = parsed.initial[0];
+  const scored = candidates.map(p => {
+    let s = 0;
+    if(p.team === parsed.team) s += 10;
+    if(p.pos  === parsed.pos)  s += 5;
+    if(p.name && p.name[0] && p.name[0].toUpperCase() === initialChar) s += 2;
+    return { p, s };
+  }).sort((a, b) => b.s - a.s);
+
+  // Clear winner
+  if(scored[0].s > (scored[1] ? scored[1].s : -1)) return scored[0].p;
+
+  // Tied top scores: prefer one that's still available
+  const top = scored.filter(x => x.s === scored[0].s);
+  const undrafted = top.filter(x => !draftState.drafted.includes(x.p.id) && !isMine(x.p.id));
+  if(undrafted.length === 1) return undrafted[0].p;
+  return top[0].p;
+}
+
 function openSyncModal(){
   document.getElementById('syncModal').style.display = '';
   document.getElementById('syncResult').innerHTML = '';
@@ -1519,22 +1583,31 @@ function syncApplyDrafted(){
     return;
   }
 
-  const idx = buildNameIndex();
+  const nameIdx = buildNameIndex();
+  const lastIdx = buildLastNameIndex();
   const matched   = [];
   const ambiguous = [];
   const unmatched = [];
 
   for(const line of lines){
+    // Strategy 1: structured "K. LacyRB - MISS" format — most reliable
+    const parsed = parseDraftedLine(line);
+    if(parsed){
+      const player = matchParsedPick(parsed, lastIdx);
+      if(player){ matched.push(player); continue; }
+      unmatched.push(line);
+      continue;
+    }
+
+    // Strategy 2: plain "First Last" full-name fallback
     const k = normalizeName(line);
-    if(!k) continue;
-    const players = idx[k];
+    if(!k){ continue; }
+    const players = nameIdx[k];
     if(!players){
       unmatched.push(line);
     } else if(players.length === 1){
       matched.push(players[0]);
     } else {
-      // Disambiguation: prefer the (still-undrafted) one — they're the more
-      // likely target.  If only one is still undrafted, mark them.
       const undrafted = players.filter(p => !draftState.drafted.includes(p.id) && !isMine(p.id));
       if(undrafted.length === 1){
         matched.push(undrafted[0]);
