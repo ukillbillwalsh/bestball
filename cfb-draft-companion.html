@@ -1718,11 +1718,18 @@ document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
       if (p.team && BYE_WEEKS[p.team] != null) p.bye = BYE_WEEKS[p.team];
     });
   }
+  // Merge team logos from bestball.json (preferred source) over any baked-in
+  // TEAM_LOGOS.  Logos in bestball.json refresh daily via make_bestball_json.py
+  // so HTML updates don't blow them away.
+  if (BESTBALL.teamLogos && typeof BESTBALL.teamLogos === 'object'){
+    Object.assign(TEAM_LOGOS, BESTBALL.teamLogos);
+  }
   const src = document.getElementById('srcInfo');
   const when = BESTBALL.updated ? new Date(BESTBALL.updated).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
   const tags = [];
   if (BESTBALL.myRankingsJoined) tags.push('my ranks joined');
   if (byeKeys.length)            tags.push(`byes baked (${byeKeys.length})`);
+  if (Object.keys(TEAM_LOGOS).length) tags.push(`logos (${Object.keys(TEAM_LOGOS).length})`);
   src.innerHTML = BESTBALL.count
     ? `<b>${BESTBALL.count}</b> players · Underdog · updated <b>${when}</b>` + (tags.length ? ' · ' + tags.join(' · ') : '')
     : `No data loaded.  Place <b>bestball.json</b> next to this file.`;
