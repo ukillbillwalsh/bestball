@@ -305,6 +305,44 @@
     .logo h1{font-size:14px}
     .src{display:none}
   }
+
+  /* ===== Injury ticker (Draft Board) ===== */
+  .injury-ticker{
+    display:flex; align-items:stretch; overflow:hidden;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    margin-bottom:14px; font-size:13px; position:relative;
+  }
+  .injury-ticker[hidden]{display:none}
+  .injury-ticker__label{
+    display:flex; align-items:center; gap:7px; flex:none;
+    background:var(--accent); color:#0a0e16; font-family:var(--disp); font-weight:700;
+    letter-spacing:.6px; text-transform:uppercase; font-size:11px; padding:0 14px;
+    white-space:nowrap;
+  }
+  .injury-ticker__label .dot{width:7px;height:7px;border-radius:50%;background:#0a0e16;animation:injpulse 1.6s ease-in-out infinite}
+  @keyframes injpulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .injury-ticker__viewport{overflow:hidden;flex:1;position:relative}
+  .injury-ticker__track{
+    display:inline-flex; align-items:center; white-space:nowrap; padding:9px 0;
+    will-change:transform; animation:injscroll var(--injdur,60s) linear infinite;
+  }
+  .injury-ticker:hover .injury-ticker__track{animation-play-state:paused}
+  @keyframes injscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .injury-item{display:inline-flex;align-items:center;gap:8px;padding:0 20px;border-right:1px solid var(--line)}
+  .injury-item__pos{font-family:var(--mono);font-weight:700;font-size:10px;color:#0a0e16;background:var(--dim);border-radius:3px;padding:1px 5px;flex:none}
+  .injury-item--pool .injury-item__pos{background:var(--accent2)}
+  .injury-item__player{font-weight:600;color:var(--ink)}
+  .injury-item--pool .injury-item__player{color:var(--accent2)}
+  .injury-item__team{color:var(--dim);font-family:var(--mono);font-size:11px}
+  .injury-item__status{color:var(--accent);font-weight:600}
+  .injury-item__head{color:var(--muted)}
+  .injury-item__star{color:var(--accent2);font-size:11px}
+  .injury-ticker__asof{
+    flex:none; display:flex; align-items:center; padding:0 12px; white-space:nowrap;
+    color:var(--dim); font-family:var(--mono); font-size:10px;
+    border-left:1px solid var(--line); background:var(--bg2);
+  }
+  @media(max-width:760px){ .injury-ticker__asof{display:none} }
 </style>
 </head>
 <body>
@@ -332,6 +370,7 @@
 <main>
 
 <section class="tab-pane on" data-tab-content="draft">
+  <div id="injuryTicker" class="injury-ticker" aria-label="Injury news ticker" hidden></div>
   <div class="draftlayout">
     <aside class="draftside left">
       <div class="dpanel">
@@ -1701,6 +1740,66 @@ document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
   };
 });
 
+// Injury ticker — reads injuries.json (produced by fetch_injuries.py) and
+// renders a scrolling strip on the Draft Board.  Players in your Underdog pool
+// are highlighted in amber with a star.  Hover pauses the scroll.
+const INJURY_URL = (typeof window!=='undefined' && window.INJURY_URL) || './injuries.json';
+
+function injEsc(s){
+  return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function injNorm(name){
+  if(!name) return '';
+  let n = name.toLowerCase().trim().replace(/[^a-z0-9 ]/g,'');
+  let parts = n.split(/\s+/).filter(Boolean);
+  if(parts.length && ['jr','sr','ii','iii','iv','v'].includes(parts[parts.length-1])) parts.pop();
+  return parts.join('');
+}
+async function renderInjuryTicker(){
+  const el = document.getElementById('injuryTicker');
+  if(!el) return;
+  let data;
+  try{
+    data = await (await fetch(INJURY_URL, {cache:'no-store'})).json();
+  }catch(e){
+    el.hidden = true;           // no file / offline → just hide it, no error noise
+    return;
+  }
+  let items = (data && data.items) || [];
+  if(!items.length){ el.hidden = true; return; }
+
+  // Build a set of pool names so we can highlight + float relevant news first,
+  // even if fetch_injuries.py wasn't run with pool scoping.
+  const pool = new Set((BESTBALL.players||[]).map(p=>injNorm(p.name)));
+  items.forEach(it=>{ it._pool = it.in_pool || pool.has(injNorm(it.player)); });
+  items.sort((a,b)=>(b._pool?1:0)-(a._pool?1:0));
+
+  const itemHTML = it=>{
+    const pool = it._pool ? ' injury-item--pool' : '';
+    const star = it._pool ? '<span class="injury-item__star">\u2605</span>' : '';
+    const status = it.injury ? '<span class="injury-item__status">'+injEsc(it.injury)+'</span>' : '';
+    return '<span class="injury-item'+pool+'">'+star+
+      '<span class="injury-item__pos">'+injEsc(it.pos||'')+'</span>'+
+      '<span class="injury-item__player">'+injEsc(it.player)+'</span>'+
+      '<span class="injury-item__team">'+injEsc(it.team||'')+'</span>'+
+      status+
+      '<span class="injury-item__head">'+injEsc(it.headline||'')+'</span></span>';
+  };
+
+  const run = items.map(itemHTML).join('');
+  let asof = '';
+  if(data.as_of){
+    const d = new Date(data.as_of);
+    asof = isNaN(d) ? data.as_of : d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  }
+  const dur = Math.max(30, items.length * 7);  // slower with fewer items
+  el.innerHTML =
+    '<div class="injury-ticker__label"><span class="dot"></span>Injuries</div>'+
+    '<div class="injury-ticker__viewport"><div class="injury-ticker__track" style="--injdur:'+dur+'s">'+run+run+'</div></div>'+
+    (asof ? '<div class="injury-ticker__asof">as of '+injEsc(asof)+' \u00b7 RotoWire</div>' : '');
+  el.hidden = false;
+}
+
 // Load data
 (async()=>{
   try{
@@ -1734,6 +1833,8 @@ document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
     ? `<b>${BESTBALL.count}</b> players · Underdog · updated <b>${when}</b>` + (tags.length ? ' · ' + tags.join(' · ') : '')
     : `No data loaded.  Place <b>bestball.json</b> next to this file.`;
   render();
+  renderInjuryTicker();                       // draw the injury strip once data is in
+  setInterval(renderInjuryTicker, 5*60*1000); // refresh every 5 min during a live draft
 })();
 </script>
 </body>
