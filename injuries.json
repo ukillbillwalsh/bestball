@@ -1,7 +1,16 @@
 {
- "as_of": "2026-07-01T10:57:07",
+ "as_of": "2026-07-02T16:33:49",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Quinten Joyner",
+   "pos": "",
+   "team": "Texas Tech",
+   "injury": "Knee",
+   "date": "July 2, 2026",
+   "headline": "Potential rotational role",
+   "in_pool": true
+  },
   {
    "player": "Mekhi Nelson",
    "pos": "",
