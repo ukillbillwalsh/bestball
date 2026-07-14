@@ -1,5 +1,5 @@
 {
- "as_of": "2026-07-11T07:43:24",
+ "as_of": "2026-07-14T17:59:23",
  "source": "RotoWire",
  "items": [
   {
@@ -45,15 +45,6 @@
    "injury": "Knee",
    "date": "July 2, 2026",
    "headline": "Potential rotational role",
-   "in_pool": true
-  },
-  {
-   "player": "Mekhi Nelson",
-   "pos": "",
-   "team": "Nebraska",
-   "injury": "Not Injury Related",
-   "date": "June 29, 2026",
-   "headline": "Arrested Monday",
    "in_pool": true
   }
  ]
