@@ -1,7 +1,16 @@
 {
- "as_of": "2026-07-17T07:39:04",
+ "as_of": "2026-07-17T14:22:25",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Walker Eget",
+   "pos": "",
+   "team": "Duke",
+   "injury": "Leg",
+   "date": "July 17, 2026",
+   "headline": "Probable for fall practice",
+   "in_pool": true
+  },
   {
    "player": "Calvin Russell",
    "pos": "",
