@@ -1,7 +1,34 @@
 {
- "as_of": "2026-07-14T18:23:29",
+ "as_of": "2026-07-17T07:09:34",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Calvin Russell",
+   "pos": "",
+   "team": "Syracuse",
+   "injury": "Lower Leg",
+   "date": "July 16, 2026",
+   "headline": "Possible return in October",
+   "in_pool": true
+  },
+  {
+   "player": "Mekhi Nelson",
+   "pos": "",
+   "team": "Nebraska",
+   "injury": "Not Injury Related",
+   "date": "July 16, 2026",
+   "headline": "Not facing charges",
+   "in_pool": true
+  },
+  {
+   "player": "Kaelan Chudzinski",
+   "pos": "",
+   "team": "Boston College",
+   "injury": "Achilles",
+   "date": "July 16, 2026",
+   "headline": "Expected to miss season",
+   "in_pool": true
+  },
   {
    "player": "Quinten Joyner",
    "pos": "",
