@@ -127,6 +127,8 @@
   td.l{text-align:left}
   .pname{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:.3px}
   .pteam{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:1px}
+  .tlogo{width:20px;height:20px;object-fit:contain;vertical-align:-4px;margin-right:7px;flex-shrink:0}
+  .pname{display:flex;align-items:center}
   .posbadge{display:inline-block;font-family:var(--mono);font-weight:600;font-size:10px;padding:3px 7px;border-radius:5px;letter-spacing:.5px}
   .pos-QB{background:rgba(61,139,255,.16);color:var(--blue)}
   .pos-RB{background:rgba(39,215,150,.15);color:var(--green)}
@@ -427,7 +429,7 @@
     <button data-view="qbstats">QB Stats<span class="tg">pff · usage · matchup</span></button>
     <button data-view="rbstats">RB Stats<span class="tg">carries · grade · matchup</span></button>
     <button data-view="wrstats">WR Stats<span class="tg">targets · yprr · matchup</span></button>
-    <button data-view="draft">Draft Room<span class="tg">bestball · adp · stacks</span></button>
+    <button data-view="props">Props<span class="tg">underdog · lines</span></button>
   </nav>
 </header>
 
@@ -591,66 +593,32 @@
     <p class="footnote">Full WR profile. <b>TGT SHARE</b> &amp; <b>PASS USG</b> are the usage anchors, <b>YPRR</b> = yards per route run (the elite efficiency stat), <b>SLOT%</b> = slot rate, <b>PASS D XPLSV</b> = opp pass-explosiveness allowed, <b>DVP 25</b> = matchup rank.</p>
   </section>
 
-  <!-- DRAFT ROOM -->
-  <section class="view" id="view-draft">
-    <div class="draftlayout">
-      <div class="draftmain">
-        <div class="toolbar">
-          <div class="filters" id="dposfilter">
-            <button class="chip on" data-pos="ALL">All</button>
-            <button class="chip" data-pos="QB">QB</button>
-            <button class="chip" data-pos="RB">RB</button>
-            <button class="chip" data-pos="WR">WR</button>
-            <button class="chip" data-pos="TE">TE</button>
-          </div>
-          <input class="search" id="dsearch" placeholder="Search player / team…">
-          <button class="chip toggle-chip on" id="hidedrafted">Hide drafted</button>
-          <button class="chip toggle-chip" id="hideunranked">Hide unranked</button>
-          <div class="spacer" style="flex:1"></div>
-          <button class="chip reset-btn" id="resetdraft">Reset draft</button>
-        </div>
-        <div class="dtablewrap">
-          <table class="dtable">
-            <thead>
-              <tr>
-                <th data-k="adp">ADP</th>
-                <th class="l" data-k="name">Player</th>
-                <th data-k="pos">Pos</th>
-                <th data-k="team">Team</th>
-                <th data-k="proj">Proj</th>
-                <th data-k="bye">Bye</th>
-                <th data-k="myRank">My Rank</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="dbody"></tbody>
-          </table>
-        </div>
-        <p class="footnote" id="draftfoot">Tap any row to mark a player as <b>drafted</b>. Tap the ★ to mark them as <b>yours</b>. State persists in your browser, so a refresh won't wipe the draft.</p>
+  <!-- PROPS -->
+  <section class="view" id="view-props">
+    <div class="toolbar">
+      <div class="filters" id="propstatfilter">
+        <button class="chip on" data-stat="ALL">All stats</button>
       </div>
-
-      <aside class="draftside">
-        <div class="dpanel">
-          <h3>My Roster · <span id="rosterCount">0</span></h3>
-          <div class="poscounts" id="poscounts"></div>
-          <div class="rosterlist" id="rosterlist"></div>
-        </div>
-
-        <div class="dpanel">
-          <h3>Stacks</h3>
-          <p class="dnote">QB + pass-catcher pairings, plus any team where you own 2+ skill players.</p>
-          <div class="stacks" id="stacks"></div>
-        </div>
-
-        <div class="dpanel">
-          <h3>Bye Weeks</h3>
-          <p class="dnote">Watch for clusters where multiple starters share a bye.</p>
-          <div class="byes" id="byegrid"></div>
-        </div>
-
-        <div class="dpanel src" id="bbsource">Loading bestball.json…</div>
-      </aside>
+      <input class="search" id="propsearch" placeholder="Search player / team…">
+      <div class="spacer" style="flex:1"></div>
+      <div class="refresh" id="propsource">Loading props.json…</div>
     </div>
+    <div class="tablewrap">
+      <table id="proptable">
+        <thead>
+          <tr>
+            <th class="l" data-k="player">Player</th>
+            <th data-k="team">Team</th>
+            <th class="l" data-k="stat">Stat</th>
+            <th data-k="line">Line</th>
+            <th data-k="over">Over</th>
+            <th data-k="under">Under</th>
+          </tr>
+        </thead>
+        <tbody id="propbody"></tbody>
+      </table>
+    </div>
+    <p class="footnote">Underdog pickem lines, refreshed with the daily pipeline. Compare a line against the projections tab to find edges — a rush-yards line well under your projection is a leverage signal for both pickem and DFS.</p>
   </section>
 </main>
 
@@ -660,6 +628,7 @@ let GAMES = [];
 let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
+let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
 
 const TEAMCOLOR={QB:"--blue",RB:"--green",WR:"--purple"};
 
@@ -708,13 +677,17 @@ function valClass(v){return v>=2.4?'val-hi':v>=2.0?'val-mid':'val-lo'}
 function levClass(l){return l>=20?'lev-hi':l>=-5?'lev-mid':'lev-lo'}
 function levTxt(l){return (l>0?'+':'')+l}
 
+function logoImg(team){
+  const u = LOGOS[team];
+  return u ? `<img class="tlogo" src="${u}" alt="" loading="lazy" onerror="this.remove()">` : '';
+}
 function renderProj(){
   let rows=pool.filter(p=>(posF==='ALL'||p.pos===posF)&&(p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)));
   rows.sort((a,b)=>{let x=a[sortK],y=b[sortK];if(typeof x==='string')return sortDir*x.localeCompare(y);return sortDir*(x-y)});
   const maxCeil=Math.max(...pool.map(p=>p.ceil));
   document.getElementById('pbody').innerHTML=rows.map(p=>`
     <tr>
-      <td class="l" data-pri="1"><div class="pname">${p.name}</div><div class="pteam">${p.team} vs ${p.opp}</div></td>
+      <td class="l" data-pri="1"><div class="pname">${logoImg(p.team)}${p.name}</div><div class="pteam">${p.team} vs ${p.opp}</div></td>
       <td data-pri="1"><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
       <td class="num" style="color:var(--muted)" data-pri="2">${p.opp}</td>
       <td class="sal" data-pri="1">$${p.sal.toLocaleString()}</td>
@@ -754,7 +727,7 @@ function renderGames(){
     const bar=(t,abbr,isFav,pass)=>`
       <div class="trow" style="flex-direction:column;align-items:stretch;gap:4px">
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="tabbr">${abbr}</div>
+          <div class="tabbr" style="display:flex;align-items:center;gap:6px">${logoImg(abbr)}${abbr}</div>
           <div class="tbar-track"><div class="tbar-fill" style="width:${(t/maxTot*100)}%;background:${isFav?'linear-gradient(90deg,var(--accent),var(--accent2))':'linear-gradient(90deg,#3d5a8c,#5478b0)'}">${t}</div></div>
           <div class="tspread">${isFav?(g.spread):('+'+Math.abs(g.spread))}</div>
         </div>
@@ -788,7 +761,7 @@ function renderLev(){
   const maxOwn=Math.max(...pool.map(p=>p.own));
   document.getElementById('levbody').innerHTML=rows.map(p=>`
     <tr>
-      <td class="l"><div class="pname">${p.name}</div><div class="pteam">${p.team} vs ${p.opp}</div></td>
+      <td class="l"><div class="pname">${logoImg(p.team)}${p.name}</div><div class="pteam">${p.team} vs ${p.opp}</div></td>
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
       <td class="sal">$${p.sal.toLocaleString()}</td>
       <td class="num" style="font-weight:600">${p.proj.toFixed(1)}</td>
@@ -994,6 +967,7 @@ function applyData(proj, odds){
   PLAYERS = (proj.players||[]).map(toPlayerRow);
   // stats tabs
   if(proj.stats) STATDATA = proj.stats;
+  if(proj.teamLogos) LOGOS = proj.teamLogos;
   // teams (pace / pass lean)
   TEAMS = proj.teams||{};
   // games: start from workbook baseline, then let live odds override lines
@@ -1027,235 +1001,95 @@ function applyData(proj, odds){
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
 }
 
-/* ---------------- Draft Room ---------------- */
-let BESTBALL = {players:[], updated:"", count:0};
-const DRAFT_LS_KEY = "rps_cfb_draft_v1";
-let draftState = loadDraftState();
-let draftSort = {k:"adp", dir:1};
-let draftPosF = "ALL";
-let draftQuery = "";
+/* ---------------- Props (Underdog pickem) ---------------- */
+let PROPS = {items:[], as_of:"", source:""};
+let propSort = {k:"line", dir:-1};
+let propStatF = "ALL";
+let propQuery = "";
 
-function loadDraftState(){
-  try{
-    const raw = localStorage.getItem(DRAFT_LS_KEY);
-    if(!raw) return {drafted:[], mine:[]};
-    const o = JSON.parse(raw);
-    return {drafted: o.drafted||[], mine: o.mine||[]};
-  }catch(e){return {drafted:[], mine:[]};}
-}
-function saveDraftState(){
-  try{ localStorage.setItem(DRAFT_LS_KEY, JSON.stringify(draftState)); }catch(e){}
-}
-const isDrafted = id => draftState.drafted.includes(id) || draftState.mine.includes(id);
-const isMine    = id => draftState.mine.includes(id);
-
-function toggleDrafted(id){
-  if(isMine(id)){
-    // currently mine -> clear mine AND drafted
-    draftState.mine = draftState.mine.filter(x=>x!==id);
-    draftState.drafted = draftState.drafted.filter(x=>x!==id);
-  } else if(draftState.drafted.includes(id)){
-    draftState.drafted = draftState.drafted.filter(x=>x!==id);
-  } else {
-    draftState.drafted.push(id);
-  }
-  saveDraftState();
-  renderDraft();
-}
-function toggleMine(id){
-  if(isMine(id)){
-    draftState.mine = draftState.mine.filter(x=>x!==id);
-    draftState.drafted = draftState.drafted.filter(x=>x!==id);
-  } else {
-    if(!draftState.mine.includes(id)) draftState.mine.push(id);
-    // ensure not also in drafted-only list
-    draftState.drafted = draftState.drafted.filter(x=>x!==id);
-  }
-  saveDraftState();
-  renderDraft();
+function fmtOdds(v){
+  if(v==null||v==="") return "—";
+  const n=+v;
+  if(isNaN(n)) return String(v);
+  return n>0? "+"+n : String(n);
 }
 
-function applyBestball(bb){
-  BESTBALL = bb || {players:[], count:0, updated:""};
-  const src = document.getElementById('bbsource');
+function applyProps(pr){
+  PROPS = pr || {items:[], as_of:"", source:""};
+  const src = document.getElementById('propsource');
   if(src){
-    const when = BESTBALL.updated ? new Date(BESTBALL.updated).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
-    src.textContent = `Source: ${BESTBALL.count} players from underdog_cfb_rankings.csv  ·  updated ${when}` + (BESTBALL.myRankingsJoined ? '  ·  my rankings joined' : '');
-  }
-  renderDraft();
-}
-
-function posBadgeClass(pos){ return 'pos-'+pos; }
-function fmt(v, d=1){ if(v==null) return '—'; return (typeof v==='number') ? v.toFixed(d) : v; }
-
-function renderDraft(){
-  const tbody = document.getElementById('dbody');
-  if(!tbody) return;
-  const hideDrafted = document.getElementById('hidedrafted')?.classList.contains('on');
-  const hideUnranked = document.getElementById('hideunranked')?.classList.contains('on');
-
-  let rows = BESTBALL.players.filter(p => {
-    if(draftPosF!=='ALL' && p.pos!==draftPosF) return false;
-    if(draftQuery){
-      const q = draftQuery.toLowerCase();
-      if(!p.name.toLowerCase().includes(q) && !(p.team||'').toLowerCase().includes(q) && !(p.teamFull||'').toLowerCase().includes(q)) return false;
+    if(PROPS.items.length){
+      const when = PROPS.as_of ? new Date(PROPS.as_of).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '';
+      src.textContent = `${PROPS.items.length} lines · ${PROPS.source||'Underdog'}${when? ' · '+when:''}`;
+    } else {
+      src.textContent = 'No CFB lines posted yet';
     }
-    if(hideDrafted && isDrafted(p.id) && !isMine(p.id)) return false;
-    if(hideUnranked && (p.adp==null)) return false;
-    return true;
-  });
-
-  const k = draftSort.k, dir = draftSort.dir;
-  rows.sort((a,b)=>{
-    let x=a[k], y=b[k];
-    if(x==null && y==null) return 0;
-    if(x==null) return 1;
-    if(y==null) return -1;
-    if(typeof x==='string') return dir*x.localeCompare(y);
-    return dir*(x-y);
-  });
-
-  // Cap visible to first 500 for perf on huge lists; user can refine via filters
-  const display = rows.slice(0, 500);
-  tbody.innerHTML = display.map(p=>{
-    const cls = isMine(p.id) ? 'mine' : (isDrafted(p.id) ? 'drafted' : '');
-    const star = isMine(p.id) ? 'on' : '';
-    return `<tr class="${cls}" data-id="${p.id}">
-      <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
-      <td class="l"><span class="pname-d">${p.name}</span></td>
-      <td><span class="posbadge ${posBadgeClass(p.pos)}">${p.pos}</span></td>
-      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${p.team||'—'}</td>
-      <td class="num">${p.proj==null?'—':p.proj}</td>
-      <td class="num" style="color:var(--muted)">${p.bye==null?'—':'W'+p.bye}</td>
-      <td class="num">${p.myRank==null?'—':p.myRank}</td>
-      <td><button class="star-btn ${star}" data-star="${p.id}" title="Mark as mine">★</button></td>
-    </tr>`;
-  }).join('');
-
-  if(rows.length > display.length){
-    tbody.insertAdjacentHTML('beforeend',
-      `<tr><td colspan="8" style="padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">Showing first ${display.length} of ${rows.length} matches.  Narrow with a filter or search to see the rest.</td></tr>`);
   }
-
-  renderRoster();
-  renderStacks();
-  renderByes();
+  // build stat filter chips from the data
+  const holder = document.getElementById('propstatfilter');
+  if(holder){
+    const stats = [...new Set(PROPS.items.map(i=>i.stat).filter(Boolean))].sort();
+    holder.innerHTML = '<button class="chip on" data-stat="ALL">All stats</button>' +
+      stats.map(s=>`<button class="chip" data-stat="${s}">${s}</button>`).join('');
+    holder.querySelectorAll('.chip').forEach(c=>{
+      c.onclick=()=>{ holder.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); propStatF=c.dataset.stat; renderProps(); };
+    });
+  }
+  renderProps();
 }
 
-function renderRoster(){
-  const mineList = BESTBALL.players.filter(p => isMine(p.id));
-  document.getElementById('rosterCount').textContent = mineList.length;
-
-  const counts = {QB:0,RB:0,WR:0,TE:0};
-  mineList.forEach(p=>{if(counts[p.pos]!==undefined) counts[p.pos]++;});
-  document.getElementById('poscounts').innerHTML =
-    ['QB','RB','WR','TE'].map(pos=>`<div class="poscount ${pos}"><div class="lbl">${pos}</div><div class="num">${counts[pos]}</div></div>`).join('')
-    + `<div class="poscount TOT"><div class="lbl">Tot</div><div class="num">${mineList.length}</div></div>`;
-
-  const sorted = [...mineList].sort((a,b)=>{
-    const o = {QB:0,RB:1,WR:2,TE:3};
-    return (o[a.pos]??9)-(o[b.pos]??9) || (a.adp??999)-(b.adp??999);
+function renderProps(){
+  const body = document.getElementById('propbody');
+  if(!body) return;
+  let rows = PROPS.items.filter(i=>
+    (propStatF==='ALL'||i.stat===propStatF) &&
+    ((i.player||'').toLowerCase().includes(propQuery)||(i.team||'').toLowerCase().includes(propQuery)));
+  rows.sort((a,b)=>{
+    let x=a[propSort.k], y=b[propSort.k];
+    if(x==null) return 1; if(y==null) return -1;
+    if(typeof x==='string') return propSort.dir*x.localeCompare(String(y));
+    return propSort.dir*((+x)-(+y));
   });
-  document.getElementById('rosterlist').innerHTML = sorted.length===0
-    ? `<div class="rosterempty">No picks yet.  Tap the ★ on any player to add them to your roster.</div>`
-    : sorted.map(p=>`<div class="ritem">
-        <span class="ri-pos pos-${p.pos}">${p.pos}</span>
-        <span class="ri-name">${p.name}</span>
-        <span class="ri-team">${p.team||''}</span>
-        <span class="ri-bye">${p.bye==null?'':'W'+p.bye}</span>
-      </div>`).join('');
-}
-
-function renderStacks(){
-  const mineList = BESTBALL.players.filter(p => isMine(p.id));
-  const byTeam = {};
-  mineList.forEach(p=>{ if(!p.team) return; (byTeam[p.team]=byTeam[p.team]||[]).push(p); });
-  const stacks = Object.entries(byTeam)
-    .filter(([t,arr])=>arr.length>=2)
-    .sort((a,b)=>b[1].length-a[1].length);
-
-  const el = document.getElementById('stacks');
-  if(stacks.length===0){
-    el.innerHTML = `<div class="rosterempty">No stacks yet.  A stack forms when you own 2+ players from the same team.</div>`;
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="6" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">
+      No lines${propStatF!=='ALL'||propQuery? ' match your filter':''}.
+      ${PROPS.items.length? '' : 'Underdog posts CFB pickem lines close to the season — this tab fills in automatically once they do.'}
+    </td></tr>`;
     return;
   }
-  el.innerHTML = stacks.map(([team, arr])=>{
-    const hasQB = arr.some(p=>p.pos==='QB');
-    const hasCatcher = arr.some(p=>p.pos==='WR' || p.pos==='TE' || p.pos==='RB');
-    const isQbStack = hasQB && hasCatcher;
-    const tag = isQbStack ? 'QB STACK' : '';
-    const players = arr
-      .sort((a,b)=>({QB:0,RB:1,WR:2,TE:3}[a.pos]??9)-({QB:0,RB:1,WR:2,TE:3}[b.pos]??9))
-      .map(p=>`${p.pos} ${p.name}`)
-      .join(' · ');
-    return `<div class="stack ${isQbStack?'qb-stack':''}">
-      <div class="stk-head">${team} <span style="color:var(--dim);font-size:11px">${arr.length} picks</span> <span class="stk-tag">${tag}</span></div>
-      <div class="stk-players">${players}</div>
-    </div>`;
-  }).join('');
+  body.innerHTML = rows.map(i=>`
+    <tr>
+      <td class="l"><div class="pname">${logoImg(i.team)}${i.player||'—'}</div></td>
+      <td class="num" style="color:var(--muted)">${i.team||'—'}</td>
+      <td class="l" style="color:var(--muted)">${i.stat||'—'}</td>
+      <td class="num" style="font-weight:600;color:var(--accent2)">${i.line??'—'}</td>
+      <td class="num">${fmtOdds(i.over)}</td>
+      <td class="num">${fmtOdds(i.under)}</td>
+    </tr>`).join('');
 }
 
-function renderByes(){
-  const mineList = BESTBALL.players.filter(p => isMine(p.id));
-  // Best Bowl Mania regular season is weeks 1-10 (then playoffs).  Show weeks 1-14.
-  const weeks = [...Array(14).keys()].map(i=>i+1);
-  const byWeek = {};
-  mineList.forEach(p=>{ if(p.bye!=null) byWeek[p.bye]=(byWeek[p.bye]||0)+1; });
-  document.getElementById('byegrid').innerHTML = weeks.map(w=>{
-    const ct = byWeek[w]||0;
-    const cls = ct>=4 ? 'danger' : ct>=2 ? 'warn' : (ct===0?'empty':'');
-    return `<div class="byecell ${cls}"><div class="wk">W${w}</div><div class="ct">${ct||'—'}</div></div>`;
-  }).join('');
-}
-
-// Click handlers (delegated on tbody)
-document.addEventListener('click', e=>{
-  const star = e.target.closest('[data-star]');
-  if(star){ e.stopPropagation(); toggleMine(star.dataset.star); return; }
-  const row = e.target.closest('#dbody tr[data-id]');
-  if(row){ toggleDrafted(row.dataset.id); }
-});
-
-// Filter / sort / search wiring
-document.addEventListener('DOMContentLoaded', ()=>{
-  // also wire after parse for safety
-});
-function wireDraftControls(){
-  document.querySelectorAll('#dposfilter .chip').forEach(c=>{
-    c.onclick = ()=>{ document.querySelectorAll('#dposfilter .chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); draftPosF = c.dataset.pos; renderDraft(); };
-  });
-  document.getElementById('dsearch').oninput = e=>{ draftQuery = e.target.value; renderDraft(); };
-  document.getElementById('hidedrafted').onclick = e=>{ e.currentTarget.classList.toggle('on'); renderDraft(); };
-  document.getElementById('hideunranked').onclick = e=>{ e.currentTarget.classList.toggle('on'); renderDraft(); };
-  document.getElementById('resetdraft').onclick = ()=>{
-    if(confirm('Reset the draft?  All "drafted" and "mine" markers will be cleared.')){
-      draftState = {drafted:[], mine:[]}; saveDraftState(); renderDraft();
-    }
+document.querySelectorAll('#proptable thead th').forEach(th=>{
+  th.onclick=()=>{
+    const k=th.dataset.k;
+    if(k===propSort.k) propSort.dir*=-1; else propSort={k, dir:(k==='player'||k==='team'||k==='stat')?1:-1};
+    document.querySelectorAll('#proptable thead th .arr').forEach(a=>a.remove());
+    th.insertAdjacentHTML('beforeend', `<span class="arr">${propSort.dir<0?'▼':'▲'}</span>`);
+    renderProps();
   };
-  document.querySelectorAll('.dtable thead th[data-k]').forEach(th=>{
-    th.onclick = ()=>{
-      const k = th.dataset.k;
-      if(draftSort.k===k) draftSort.dir *= -1;
-      else { draftSort.k = k; draftSort.dir = (k==='name'||k==='pos'||k==='team') ? 1 : 1; }
-      document.querySelectorAll('.dtable thead th .arr').forEach(a=>a.remove());
-      th.insertAdjacentHTML('beforeend', `<span class="arr">${draftSort.dir<0?'▼':'▲'}</span>`);
-      renderDraft();
-    };
-  });
-}
-wireDraftControls();
+});
+document.getElementById('propsearch').oninput = e=>{ propQuery=e.target.value.toLowerCase(); renderProps(); };
 
 async function loadData(){
-  let proj=null, odds=null, bb=null;
+  let proj=null, odds=null, pr=null;
   try{ proj = await (await fetch(DATA_BASE+'projections.json',{cache:'no-store'})).json(); }
   catch(e){ console.warn('projections.json not found — using bundled sample',e); }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
-  try{ bb = await (await fetch(DATA_BASE+'bestball.json',{cache:'no-store'})).json(); }
-  catch(e){ /* bestball tab will show empty if missing */ }
+  try{ pr = await (await fetch(DATA_BASE+'props.json',{cache:'no-store'})).json(); }
+  catch(e){ /* props optional; tab shows empty state if missing */ }
   if(!proj){ proj = SAMPLE; }            // dev fallback so the file renders when opened directly
   applyData(proj, odds);
-  applyBestball(bb || {players:[], count:0, updated:""});
+  applyProps(pr);
 }
 
 // Re-pull live odds on the same cadence shown in the header (90s), without touching projections.
