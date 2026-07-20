@@ -719,36 +719,43 @@ document.getElementById('psearch').oninput=e=>{q=e.target.value.toLowerCase();re
 
 /* ---------------- matchups grid ---------------- */
 function renderGames(){
-  document.getElementById('gamegrid').innerHTML=GAMES.map(g=>{
-    const shoot=g.total>=58&&Math.abs(g.spread)<=7;
-    const qb2=g.total>=57&&Math.abs(g.spread)<=6;
-    const maxTot=Math.max(g.aTot,g.hTot);
+  const grid=document.getElementById('gamegrid');
+  if(!GAMES.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:52px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No games on the slate yet.</div>`;
+    return;
+  }
+  grid.innerHTML=GAMES.map(g=>{
+    const hasLines=g.total!=null&&g.spread!=null;
+    const shoot=hasLines&&g.total>=58&&Math.abs(g.spread)<=7;
+    const qb2=hasLines&&g.total>=57&&Math.abs(g.spread)<=6;
+    const hasTT=g.aTot!=null&&g.hTot!=null;
+    const maxTot=hasTT?Math.max(g.aTot,g.hTot):1;
     const leanTag=pass=>pass>=56?'<b>PASS</b>':pass<=47?'<b>RUN</b>':'<b>BAL</b>';
     const bar=(t,abbr,isFav,pass)=>`
       <div class="trow" style="flex-direction:column;align-items:stretch;gap:4px">
         <div style="display:flex;align-items:center;gap:10px">
           <div class="tabbr" style="display:flex;align-items:center;gap:6px">${logoImg(abbr)}${abbr}</div>
-          <div class="tbar-track"><div class="tbar-fill" style="width:${(t/maxTot*100)}%;background:${isFav?'linear-gradient(90deg,var(--accent),var(--accent2))':'linear-gradient(90deg,#3d5a8c,#5478b0)'}">${t}</div></div>
-          <div class="tspread">${isFav?(g.spread):('+'+Math.abs(g.spread))}</div>
+          ${hasTT?`<div class="tbar-track"><div class="tbar-fill" style="width:${(t/maxTot*100)}%;background:${isFav?'linear-gradient(90deg,var(--accent),var(--accent2))':'linear-gradient(90deg,#3d5a8c,#5478b0)'}">${t}</div></div>`:`<div class="tbar-track" style="opacity:.25"></div>`}
+          <div class="tspread">${hasLines?(isFav?g.spread:('+'+Math.abs(g.spread))):'—'}</div>
         </div>
-        <div class="leanwrap" style="padding-left:64px">
+        ${pass!=null?`<div class="leanwrap" style="padding-left:64px">
           <div class="leanbar" title="Pass ${pass}% · Rush ${100-pass}%"><span class="lp" style="width:${pass}%"></span><span class="lr" style="width:${100-pass}%"></span></div>
           <span class="leantxt">${leanTag(pass)} · P${pass}/R${100-pass}</span>
-        </div>
+        </div>`:''}
       </div>`;
     return `<div class="game ${shoot?'shootout':''}">
       <div class="ghead">
-        <div><div class="gtime">${g.time}</div><div style="font-family:var(--disp);font-weight:600;font-size:17px;margin-top:3px">${g.away} @ ${g.home}</div></div>
-        <div style="text-align:right"><div class="gtotal">${g.total}<small>O/U TOTAL</small></div></div>
+        <div><div class="gtime">${g.time||''}</div><div style="font-family:var(--disp);font-weight:600;font-size:17px;margin-top:3px">${g.away} @ ${g.home}</div></div>
+        <div style="text-align:right"><div class="gtotal">${g.total!=null?g.total:'—'}<small>O/U TOTAL</small></div></div>
       </div>
       <div class="teams">
         ${bar(g.aTot,g.away,g.fav===g.away,g.aPass)}
         ${bar(g.hTot,g.home,g.fav===g.home,g.hPass)}
       </div>
       <div class="gfoot">
-        <span class="gtag pace">≈${g.pace} plays/tm</span>
+        ${g.pace!=null?`<span class="gtag pace">≈${g.pace} plays/tm</span>`:`<span class="gtag">LINES PENDING</span>`}
         ${shoot?'<span class="gtag" style="color:var(--accent);border-color:rgba(255,90,31,.35)">SHOOTOUT</span>':''}
-        ${qb2?'<span class="gtag qb2">2-QB VIABLE</span>':'<span class="gtag">1-QB GAME</span>'}
+        ${hasLines?(qb2?'<span class="gtag qb2">2-QB VIABLE</span>':'<span class="gtag">1-QB GAME</span>'):''}
       </div>
     </div>`;
   }).join('');
