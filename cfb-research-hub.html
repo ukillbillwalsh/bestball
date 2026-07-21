@@ -430,6 +430,7 @@
     </div>
     <div class="slatepill">
       <span class="live"><span class="dot"></span>Live</span>
+      <select id="slatepick" style="display:none;background:var(--bg2);color:var(--ink);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 10px;font-family:var(--mono);font-size:12px;cursor:pointer"></select>
       <span><b id="slate-label">Loading…</b> · <b id="slate-games">— games</b></span>
     </div>
     <div class="spacer"></div>
@@ -777,9 +778,8 @@ function exportProjCSV(){
   let rows=pool.filter(p=>(posF==='ALL'||p.pos===posF)&&(p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)));
   rows.sort((a,b)=>{let x=a[sortK],y=b[sortK];if(typeof x==='string')return sortDir*x.localeCompare(y);return sortDir*(x-y)});
   const cols=[
-    ['Player','name'],['Pos','pos'],['Team','team'],['Opp','opp'],
-    ['Salary','sal'],['Proj','proj'],['Ceiling','ceil'],['Floor','floor'],
-    ['Value','val'],['Usage%','usage'],['TeamTotal','itt'],['pOwn%','own'],['Leverage','lev']
+    ['Name','name'],['Team','team'],['Proj','proj'],
+    ['Ownership','own'],['Floor','floor'],['Ceiling','ceil']
   ];
   const esc=v=>{ if(v==null) return ''; const s=String(v);
     return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
@@ -1280,10 +1280,41 @@ document.querySelectorAll('#proptable thead th').forEach(th=>{
 });
 document.getElementById('propsearch').oninput = e=>{ propQuery=e.target.value.toLowerCase(); renderProps(); };
 
+let SLATES = [];             // from slates.json when multi-slate exports exist
+let SLATE_ID = null;         // currently selected slate id
+function projFile(){
+  const s = SLATES.find(s=>s.id===SLATE_ID);
+  return s ? s.file : 'projections.json';
+}
 async function loadData(){
   let proj=null, odds=null, pr=null;
-  try{ proj = await (await fetch(DATA_BASE+'projections.json',{cache:'no-store'})).json(); }
-  catch(e){ console.warn('projections.json not found — using bundled sample',e); }
+  // Slate manifest first: if several slates were exported, build the picker.
+  try{
+    const man = await (await fetch(DATA_BASE+'slates.json',{cache:'no-store'})).json();
+    if(man && Array.isArray(man.slates) && man.slates.length){
+      SLATES = man.slates;
+      const saved = localStorage.getItem('hubSlate');
+      SLATE_ID = SLATES.some(s=>s.id===saved) ? saved : SLATES[0].id;
+      const sel = document.getElementById('slatepick');
+      if(sel && SLATES.length > 1){
+        sel.innerHTML = SLATES.map(s=>
+          `<option value="${s.id}"${s.id===SLATE_ID?' selected':''}>${s.label} · ${s.players} players</option>`).join('');
+        sel.style.display = 'inline-block';
+        sel.onchange = async ()=>{
+          SLATE_ID = sel.value;
+          localStorage.setItem('hubSlate', SLATE_ID);
+          try{
+            const p = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json();
+            const o = await fetch(DATA_BASE+'odds.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>null);
+            applyData(p, o);
+          }catch(e){ console.warn('slate load failed', e); }
+        };
+      }
+    }
+  }catch(e){ /* no slates.json -> single-slate mode, plain projections.json */ }
+
+  try{ proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json(); }
+  catch(e){ console.warn('projections not found — using bundled sample',e); }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
   try{ pr = await (await fetch(DATA_BASE+'props.json',{cache:'no-store'})).json(); }
@@ -1298,7 +1329,7 @@ function startOddsRefresh(){
   setInterval(async()=>{
     try{
       const odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json();
-      const proj = await (await fetch(DATA_BASE+'projections.json',{cache:'no-store'})).json();
+      const proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json();
       applyData(proj, odds);
     }catch(e){/* keep last good render */}
   }, 90000);

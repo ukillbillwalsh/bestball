@@ -404,6 +404,7 @@
         <input class="search" id="dsearch" placeholder="Search player / team…">
         <button class="chip on" id="hidedrafted">Hide drafted</button>
         <button class="chip" id="hideunranked">Hide unranked</button>
+        <button class="chip" id="dcsvbtn" title="Download the current view as CSV">↓ CSV</button>
         <div class="spacer"></div>
         <button class="chip" id="syncbtn" title="Bulk-mark drafted players from your Underdog draft tab">Sync Drafted</button>
         <button class="chip" id="savedraft" title="Snapshot your current roster to your Portfolio">Save Draft</button>
@@ -561,7 +562,7 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {"ABILE":[8],"AF":[3],"AKRON":[9],"ALA":[9],"ALABA":[3],"ALBAN":[2],"ALCOR":[8],"AMERI":[1],"ANDER":[2],"APP":[5],"ARK":[8],"ARKAN":[4],"ARMY":[3],"ASU":[4],"AUB":[6],"AUROR":[1],"AUSTI":[9],"AZ":[7],"BALL":[9],"BAY":[6],"BC":[6],"BELOI":[2],"BENED":[1],"BETHU":[13],"BOWIE":[1],"BOWLI":[10],"BROWN":[1],"BRYAN":[4],"BSU":[7],"BUCKN":[5],"BUFFA":[9],"BUTLE":[5],"BYU":[4],"CAL":[10],"CALIF":[1],"CAMPB":[6],"CASTL":[1],"CENTR":[2],"CHARL":[8],"CHATT":[7],"CHICA":[6],"CHRIS":[1],"CIN":[6],"CLARK":[2],"CLEM":[6],"COAST":[8],"COLGA":[6],"COLLE":[1],"COLO":[6],"COLOR":[6],"COLUM":[1],"CONCO":[1],"CORNE":[1],"DARTM":[1],"DAVID":[8],"DAYTO":[4],"DELAW":[7],"DELTA":[1],"DICKI":[1],"DRAKE":[3],"DUKE":[5],"DUQUE":[5],"EAST":[6],"EASTE":[8],"EDWAR":[2],"ELIZA":[2],"ELMHU":[1],"ELON":[8],"EUREK":[1],"FAIRM":[2],"FLORI":[5],"FORDH":[9],"FORT":[1],"FRANK":[2],"FRES":[8],"FSU":[2],"FURMA":[7],"GARDN":[8],"GEORG":[6],"GLENV":[2],"GRAMB":[3],"GREEN":[2],"GT":[5],"HAMPT":[6],"HARVA":[1],"HAWAI":[3],"HOLY":[6],"HOU":[9],"HOUST":[6],"HOWAR":[3],"IDAHO":[3],"ILL":[7],"ILLIN":[6],"INCAR":[1],"IND":[10],"INDIA":[7],"IOWA":[7],"ISU":[7],"JACKS":[5],"JAMES":[12],"KEAN":[3],"KENNE":[5],"KENT":[10],"KENTU":[2],"KSU":[5],"KU":[4],"LAFAY":[6],"LAKEL":[1],"LAMAR":[3],"LANE":[2],"LAWRE":[2],"LEHIG":[6],"LEWIS":[3],"LIBER":[7],"LINCO":[1],"LINDE":[3],"LINFI":[1],"LITTL":[1],"LONG":[9],"LOU":[8],"LOUIS":[4],"LSU":[9],"MAINE":[6],"MARIS":[3],"MARSH":[7],"MASSA":[9],"MCNEE":[6],"MD":[8],"MEM":[4],"MERCE":[8],"MERCY":[6],"MERRI":[6],"MIA":[6],"MIAOH":[9],"MICH":[6],"MIDDL":[6],"MILES":[2],"MINN":[7],"MISS":[5],"MISSI":[8],"MISSO":[5],"MIZ":[8],"MONMO":[6],"MONTA":[6],"MONTC":[1],"MOREH":[2],"MORGA":[4],"MSST":[6],"MSU":[9],"MURRA":[6],"NAVY":[3],"NCST":[7],"ND":[8],"NEB":[8],"NEVAD":[5],"NEW":[3],"NEWBE":[1],"NICHO":[6],"NORFO":[7],"NORTH":[6],"NW":[2],"OHIO":[2],"OKST":[5],"OLD":[11],"ORE":[5],"OREGO":[8],"OSU":[8],"OU":[5],"PACIF":[1],"PENNS":[1],"PITT":[10],"POINT":[1],"PORTL":[5],"PRAIR":[9],"PRESB":[2],"PRINC":[1],"PSU":[8],"PUGET":[4],"PUR":[8],"RHODE":[6],"RICE":[9],"RICHM":[7],"ROBER":[3],"ROCKF":[6],"ROOSE":[2],"ROWAN":[1],"RUT":[6],"SACRA":[5],"SACRE":[8],"SALIS":[1],"SAM":[5],"SAMFO":[3],"SAN":[4],"SAVAN":[2],"SCAR":[7],"SDSU":[10],"SE":[5],"SMU":[6],"SOUTH":[6],"ST":[2],"ST.":[7],"STAN":[2],"STEPH":[6],"STETS":[4],"STONE":[5],"STONY":[5],"SUNY":[2],"SYR":[4],"TAMU":[9],"TARLE":[4],"TCU":[6],"TEMPL":[8],"TENN":[9],"TENNE":[3],"TEX":[5],"TEXAS":[2],"THE":[3],"THOMA":[1],"TOLED":[9],"TOWSO":[8],"TROY":[5],"TTU":[6],"TUL":[5],"TULSA":[9],"TUSKE":[1],"UAB":[8],"UALBA":[6],"UC":[6],"UCF":[7],"UCLA":[5],"UCONN":[7],"UF":[8],"UFTL":[1],"UGA":[8],"UK":[9],"UL":[6],"UNC":[4],"UNIVE":[1],"UNLV":[3],"USC":[7],"UT":[4],"UTAH":[7],"UTEP":[8],"UTSA":[9],"UVA":[10],"VALPA":[9],"VAN":[9],"VILLA":[6],"VIRGI":[4],"VMI":[6],"VT":[9],"WAGNE":[4],"WAKE":[8],"WASHI":[10],"WEBBE":[2],"WEBER":[10],"WEST":[2],"WESTE":[10],"WHITW":[1],"WILLA":[1],"WILLI":[1],"WINON":[2],"WINST":[2],"WIS":[6],"WISCO":[1],"WOFFO":[8],"WSH":[8],"WVU":[9],"WYOMI":[9],"YALE":[1],"YOUNG":[8]};
+const BYE_WEEKS = {};
 
 // Return a player's bye weeks as an array (most teams 1, Week 0 teams 2).
 // Works whether the player carries `byes` (new), a single `bye`, or nothing.
@@ -585,6 +586,52 @@ function teamLogo(team, sm){
 let BESTBALL = {players:[], updated:"", count:0};
 let draftState = loadState();
 let sortKey = 'adp', sortDir = 1;
+
+function exportCompanionCSV(){
+  // Same filter + sort as the board so the download matches what you see.
+  let rows = BESTBALL.players.filter(p=>{
+    if(posFilter!=='ALL' && p.pos!==posFilter) return false;
+    if(query){
+      const q = query.toLowerCase();
+      const hit = p.name.toLowerCase().includes(q)
+               || (p.team||'').toLowerCase().includes(q)
+               || (p.teamFull||'').toLowerCase().includes(q);
+      if(!hit) return false;
+    }
+    if(hideDrafted && isDrafted(p.id) && !isMine(p.id)) return false;
+    if(hideUnranked && p.adp==null) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    if(x==null && y==null) return 0;
+    if(x==null) return 1;
+    if(y==null) return -1;
+    if(typeof x==='string') return sortDir*x.localeCompare(y);
+    return sortDir*(x-y);
+  });
+  const cols=[
+    ['Name', p=>p.name],
+    ['Pos', p=>p.pos],
+    ['Team', p=>p.team],
+    ['ADP', p=>p.adp],
+    ['Proj', p=>p.proj],
+    ['My Proj', p=>p.myProj],
+    ['UD Proj', p=>p.udProj],
+    ['My Rank', p=>p.myRank],
+    ['Byes', p=>byesOf(p).join(' ')],
+  ];
+  const esc=v=>{ if(v==null) return ''; const s=String(v);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines=[cols.map(c=>c[0]).join(',')];
+  for(const p of rows) lines.push(cols.map(c=>esc(c[1](p))).join(','));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`bestball-projections-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},100);
+}
 let posFilter = 'ALL';
 let query = '';
 
@@ -634,6 +681,7 @@ function toggleMine(id){
 function render(){
   const body = document.getElementById('dbody');
   const hideDrafted  = document.getElementById('hidedrafted').classList.contains('on');
+document.getElementById('dcsvbtn').onclick = exportCompanionCSV;
   const hideUnranked = document.getElementById('hideunranked').classList.contains('on');
 
   let rows = BESTBALL.players.filter(p=>{
