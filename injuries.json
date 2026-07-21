@@ -1,7 +1,25 @@
 {
- "as_of": "2026-07-19T21:56:54",
+ "as_of": "2026-07-20T20:43:12",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Trell Harris",
+   "pos": "",
+   "team": "Oklahoma",
+   "injury": "Lower Body",
+   "date": "July 20, 2026",
+   "headline": "Nears full health for camp",
+   "in_pool": true
+  },
+  {
+   "player": "Ahmad Hardy",
+   "pos": "",
+   "team": "Missouri",
+   "injury": "Leg",
+   "date": "July 20, 2026",
+   "headline": "Might not be ready for opener",
+   "in_pool": true
+  },
   {
    "player": "Walker Eget",
    "pos": "",

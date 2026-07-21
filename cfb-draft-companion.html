@@ -563,6 +563,14 @@ const LS_KEY = 'cfb_draft_companion_v1';
 // whatever bye each player has in bestball.json.  Empty = use bestball.json's.
 const BYE_WEEKS = {};
 
+// Return a player's bye weeks as an array (most teams 1, Week 0 teams 2).
+// Works whether the player carries `byes` (new), a single `bye`, or nothing.
+function byesOf(p){
+  if(Array.isArray(p.byes) && p.byes.length) return p.byes;
+  if(p.bye != null) return [p.bye];
+  return [];
+}
+
 // TEAM_LOGOS is baked in by fetch_team_logos.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json; values are ESPN CDN URLs.
 const TEAM_LOGOS = {};
@@ -673,7 +681,7 @@ function render(){
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
       <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${p.team||'—'}</td>
       <td class="num">${p.proj==null?'—':p.proj}</td>
-      <td class="num" style="color:var(--muted)">${p.bye==null?'—':'W'+p.bye}</td>
+      <td class="num" style="color:var(--muted)">${byesOf(p).length?byesOf(p).map(w=>'W'+w).join('·'):'—'}</td>
       <td class="num">${p.myRank==null?'—':p.myRank}</td>
     </tr>`;
   }).join('');
@@ -706,7 +714,7 @@ function renderRoster(){
         <span class="ri-pos pos-${p.pos}">${p.pos}</span>
         <span class="ri-name">${teamLogo(p.team, true)}${p.name}</span>
         <span class="ri-team">${p.team||''}</span>
-        <span class="ri-bye">${p.bye==null?'':'W'+p.bye}</span>
+        <span class="ri-bye">${byesOf(p).map(w=>'W'+w).join('·')}</span>
       </div>`).join('');
 }
 
@@ -795,10 +803,10 @@ function renderPartners(){
   // this candidate too would push the cluster to 3+.
   const byeCounts = {};
   BESTBALL.players.filter(p=>isMine(p.id)).forEach(p=>{
-    if(p.bye!=null) byeCounts[p.bye] = (byeCounts[p.bye]||0)+1;
+    byesOf(p).forEach(bw=>{ byeCounts[bw] = (byeCounts[bw]||0)+1; });
   });
-  if(!isMine(sel) && player.bye!=null){
-    byeCounts[player.bye] = (byeCounts[player.bye]||0)+1;
+  if(!isMine(sel)){
+    byesOf(player).forEach(bw=>{ byeCounts[bw] = (byeCounts[bw]||0)+1; });
   }
 
   // Selected player summary header
@@ -825,9 +833,11 @@ function renderPartners(){
     else if(p.pos==='WR' || p.pos==='TE')        tag = '2nd skill';
 
     const rk      = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
-    const byeNote = p.bye==null ? '—' : `W${p.bye}`;
-    const conflict = (p.bye!=null && byeCounts[p.bye] >= 2) ? 'conflict' : '';
-    const byeTitle = conflict ? `would push your bye cluster on W${p.bye} to ${byeCounts[p.bye]+1}` : '';
+    const pb      = byesOf(p);
+    const byeNote = pb.length ? pb.map(w=>'W'+w).join('·') : '—';
+    const worstBye = pb.length ? pb.reduce((m,w)=>(byeCounts[w]||0)>(byeCounts[m]||0)?w:m, pb[0]) : null;
+    const conflict = (worstBye!=null && byeCounts[worstBye] >= 2) ? 'conflict' : '';
+    const byeTitle = conflict ? `would push your bye cluster on W${worstBye} to ${byeCounts[worstBye]+1}` : '';
 
     return `<div class="partner-row" data-star="${p.id}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
@@ -860,10 +870,11 @@ function renderByes(){
   const POSES  = ['QB','RB','WR','TE'];
   const byWeek = {};   // week -> {QB, RB, WR, TE, TOTAL}
   mine.forEach(p=>{
-    if(p.bye == null) return;
-    if(!byWeek[p.bye]) byWeek[p.bye] = {QB:0, RB:0, WR:0, TE:0, TOTAL:0};
-    if(byWeek[p.bye][p.pos] !== undefined) byWeek[p.bye][p.pos]++;
-    byWeek[p.bye].TOTAL++;
+    byesOf(p).forEach(bw=>{
+      if(!byWeek[bw]) byWeek[bw] = {QB:0, RB:0, WR:0, TE:0, TOTAL:0};
+      if(byWeek[bw][p.pos] !== undefined) byWeek[bw][p.pos]++;
+      byWeek[bw].TOTAL++;
+    });
   });
 
   const weeks = Object.keys(byWeek).map(Number).sort((a,b)=>a-b);
@@ -915,7 +926,7 @@ function renderBestAvailable(){
 
   // Bye cluster context for the soft penalty
   const byeCt = {};
-  mine.forEach(p=>{ if(p.bye != null) byeCt[p.bye] = (byeCt[p.bye]||0) + 1; });
+  mine.forEach(p=>{ byesOf(p).forEach(bw=>{ byeCt[bw] = (byeCt[bw]||0) + 1; }); });
 
   // Late-draft kicker: penalty grows with roster size
   const rosterSize = mine.length;
@@ -930,7 +941,8 @@ function renderBestAvailable(){
     .filter(p => !POS_CAP[p.pos] || myPosCt[p.pos] < POS_CAP[p.pos])
     .map(p => {
       const base = rank(p);
-      const existingOnBye = p.bye != null ? (byeCt[p.bye] || 0) : 0;
+      // Worst cluster across this candidate's bye(s).
+      const existingOnBye = Math.max(0, ...byesOf(p).map(bw => byeCt[bw] || 0));
       let penalty = 0;
       if(existingOnBye >= 2) penalty = byePenaltyWeight;        // would push to 3+
       else if(existingOnBye === 1) penalty = byePenaltyWeight / 2;
@@ -947,9 +959,10 @@ function renderBestAvailable(){
   el.innerHTML = candidates.map(c => {
     const p = c.p;
     const rk  = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
-    const byeNote = p.bye == null ? '—' : `W${p.bye}`;
+    const pb = byesOf(p);
+    const byeNote = pb.length ? pb.map(w=>'W'+w).join('·') : '—';
     const conflict = c.existingOnBye >= 2 ? 'conflict' : '';
-    const title = c.existingOnBye >= 2 ? `would push your bye cluster on W${p.bye} to ${c.existingOnBye + 1}` : '';
+    const title = c.existingOnBye >= 2 ? `would push your bye cluster to ${c.existingOnBye + 1}` : '';
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
       <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${p.team || '—'}</div></span>
@@ -982,7 +995,7 @@ function renderBestStacking(){
   });
 
   const byeCt = {};
-  mine.forEach(p=>{ if(p.bye != null) byeCt[p.bye] = (byeCt[p.bye]||0)+1; });
+  mine.forEach(p=>{ byesOf(p).forEach(bw=>{ byeCt[bw] = (byeCt[bw]||0)+1; }); });
 
   const suggestions = Object.entries(myTeams).map(([team, picks]) => {
     const haveQB = picks.some(p=>p.pos === 'QB');
@@ -1021,8 +1034,9 @@ function renderBestStacking(){
   el.innerHTML = suggestions.map(s => {
     const p = s.player;
     const rk  = p.myRank != null ? `MY ${p.myRank}` : `ADP ${p.adp}`;
-    const byeNote = p.bye == null ? '—' : `W${p.bye}`;
-    const conflict = (p.bye != null && (byeCt[p.bye] || 0) >= 2) ? 'conflict' : '';
+    const pb = byesOf(p);
+    const byeNote = pb.length ? pb.map(w=>'W'+w).join('·') : '—';
+    const conflict = (pb.length && Math.max(...pb.map(w=>byeCt[w]||0)) >= 2) ? 'conflict' : '';
     const title = `pairs with ${s.anchor.pos} ${s.anchor.name} on ${s.team}`;
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
@@ -1811,10 +1825,23 @@ async function renderInjuryTicker(){
   // Apply baked-in bye weeks if present.  BYE_WEEKS wins over bestball.json
   // for any team it covers; players on teams not in the table keep whatever
   // bye they already had (Underdog field or earlier CFBD join).
+  // Values may be a single week (old format) or an array (Week 0 teams have
+  // two byes).  Normalize every player to a `byes` array and keep `bye` as the
+  // first, so old and new code paths both work.
   const byeKeys = Object.keys(BYE_WEEKS);
-  if (BESTBALL.players && byeKeys.length){
+  if (BESTBALL.players){
     BESTBALL.players.forEach(p=>{
-      if (p.team && BYE_WEEKS[p.team] != null) p.bye = BYE_WEEKS[p.team];
+      let arr = null;
+      if (p.team && byeKeys.length && BYE_WEEKS[p.team] != null){
+        const v = BYE_WEEKS[p.team];
+        arr = Array.isArray(v) ? v.slice() : [v];
+      } else if (Array.isArray(p.byes) && p.byes.length){
+        arr = p.byes.slice();
+      } else if (p.bye != null){
+        arr = [p.bye];
+      }
+      p.byes = arr || [];
+      p.bye  = p.byes.length ? p.byes[0] : null;
     });
   }
   // Merge team logos from bestball.json (preferred source) over any baked-in
