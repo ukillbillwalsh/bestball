@@ -543,6 +543,7 @@
             <th data-k="team">Team</th>
             <th data-k="opp">Opp</th>
             <th data-k="mscore">Matchup</th>
+            <th data-k="mdetail">Detail</th>
             <th data-k="mrank">DvP Rank</th>
             <th data-k="mptsg">Pts/G Alwd</th>
             <th data-k="proj">Proj</th>
@@ -552,7 +553,7 @@
         <tbody id="mcbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Starters only keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
+    <p class="footnote">Starters only keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -696,7 +697,8 @@ let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
-let DVP = {};          // {QB:{abbr:{rank,ptsG}},...} defense-vs-position
+let DVP = {};          // {QB:{abbr:{rank,ptsG,cmpPct/catchPct}},...} defense-vs-position
+let LINES = {};        // {abbr:{ol,dl}} line yards: OL created / DL conceded per rush
 
 const TEAMCOLOR={QB:"--blue",RB:"--green",WR:"--purple"};
 
@@ -1076,6 +1078,7 @@ function applyData(proj, odds){
   if(proj.stats) STATDATA = proj.stats;
   if(proj.teamLogos) LOGOS = proj.teamLogos;
   if(proj.dvp) DVP = proj.dvp;
+  LINES = proj.lines || {};
   // teams (pace / pass lean)
   TEAMS = proj.teams||{};
   // games: start from workbook baseline, then let live odds override lines
@@ -1161,7 +1164,29 @@ function renderMChart(){
   let rows=pool
     .filter(p=>(!starters || starters.has(p.id))
       &&(mcPos==='ALL'||p.pos===mcPos)&&(p.name.toLowerCase().includes(mcQ)||p.team.toLowerCase().includes(mcQ)))
-    .map(p=>{const m=mcScore(p); return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n};});
+    .map(p=>{
+      const m=mcScore(p);
+      // Position-aware matchup detail:
+      //   QB -> opponent completion % allowed      (DvQB COMP/ATT)
+      //   WR -> opponent catch rate allowed to WRs (DvWR REC/TAR)
+      //   RB -> own OL line yards vs opponent DL line yards conceded
+      let mdetail=null, mdText='—', mdCls='';
+      const oppE = m.opp && DVP[p.pos] ? DVP[p.pos][m.opp] : null;
+      if(p.pos==='QB' && oppE && oppE.cmpPct!=null){
+        mdetail=oppE.cmpPct; mdText=oppE.cmpPct.toFixed(1)+'% cmp';
+      } else if(p.pos==='WR' && oppE && oppE.catchPct!=null){
+        mdetail=oppE.catchPct; mdText=oppE.catchPct.toFixed(1)+'% catch';
+      } else if(p.pos==='RB'){
+        const ol=LINES[p.team], dl=m.opp?LINES[m.opp]:null;
+        if(ol && dl){
+          mdetail=+(ol.ol-dl.dl).toFixed(2);
+          const sign=mdetail>0?'+':'';
+          mdText=`OL ${ol.ol.toFixed(2)} v ${dl.dl.toFixed(2)} <b class="${mdetail>=0?'avg-over':'avg-under'}">${sign}${mdetail.toFixed(2)}</b>`;
+          mdCls='mono';
+        }
+      }
+      return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n, mdetail, mdText, mdCls};
+    });
   rows.sort((a,b)=>{
     let x=a[mcSort.k], y=b[mcSort.k];
     if(x==null) return 1; if(y==null) return -1;
@@ -1169,7 +1194,7 @@ function renderMChart(){
     return mcSort.dir*((+x)-(+y));
   });
   if(!rows.length){
-    body.innerHTML=`<tr><td colspan="9" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No players match.</td></tr>`;
+    body.innerHTML=`<tr><td colspan="10" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No players match.</td></tr>`;
     return;
   }
   body.innerHTML=rows.map(p=>`
@@ -1179,6 +1204,7 @@ function renderMChart(){
       <td class="num" style="color:var(--muted)">${p.team}</td>
       <td class="num">${p.mopp?`<span style="display:inline-flex;align-items:center;gap:5px">${logoImg(p.mopp)}${p.mopp}</span>`:'—'}</td>
       <td class="num"><span class="mc-chip ${mcCls(p.mscore)}">${p.mscore==null?'N/A':p.mscore.toFixed(1)}</span></td>
+      <td class="num" style="font-family:var(--mono);font-size:11px;color:var(--muted)">${p.mdText}</td>
       <td class="num" style="color:var(--muted)">${p.mrank==null?'—':'#'+p.mrank+' of '+p.mn}</td>
       <td class="num">${p.mptsg==null?'—':p.mptsg}</td>
       <td class="num" style="font-weight:600">${p.proj}</td>

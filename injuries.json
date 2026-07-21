@@ -1,7 +1,25 @@
 {
- "as_of": "2026-07-21T10:07:39",
+ "as_of": "2026-07-21T11:33:34",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Will Hammond",
+   "pos": "",
+   "team": "Texas Tech",
+   "injury": "Knee",
+   "date": "July 21, 2026",
+   "headline": "Should be ready to roll for Week 1",
+   "in_pool": true
+  },
+  {
+   "player": "Dante Dowdell",
+   "pos": "",
+   "team": "Georgia",
+   "injury": "Undisclosed",
+   "date": "July 21, 2026",
+   "headline": "Sustains unspecified serious injury",
+   "in_pool": true
+  },
   {
    "player": "Trell Harris",
    "pos": "",
