@@ -589,6 +589,8 @@ let sortKey = 'adp', sortDir = 1;
 
 function exportCompanionCSV(){
   // Same filter + sort as the board so the download matches what you see.
+  const hideDrafted  = document.getElementById('hidedrafted').classList.contains('on');
+  const hideUnranked = document.getElementById('hideunranked').classList.contains('on');
   let rows = BESTBALL.players.filter(p=>{
     if(posFilter!=='ALL' && p.pos!==posFilter) return false;
     if(query){
@@ -681,7 +683,6 @@ function toggleMine(id){
 function render(){
   const body = document.getElementById('dbody');
   const hideDrafted  = document.getElementById('hidedrafted').classList.contains('on');
-document.getElementById('dcsvbtn').onclick = exportCompanionCSV;
   const hideUnranked = document.getElementById('hideunranked').classList.contains('on');
 
   let rows = BESTBALL.players.filter(p=>{
@@ -1784,6 +1785,7 @@ document.querySelectorAll('#dposfilter .chip').forEach(c=>{
   };
 });
 document.getElementById('dsearch').oninput = e=>{ query = e.target.value; render(); };
+document.getElementById('dcsvbtn').onclick = exportCompanionCSV;
 document.getElementById('hidedrafted').onclick  = e=>{ e.currentTarget.classList.toggle('on'); render(); };
 document.getElementById('hideunranked').onclick = e=>{ e.currentTarget.classList.toggle('on'); render(); };
 document.getElementById('resetdraft').onclick = ()=>{
