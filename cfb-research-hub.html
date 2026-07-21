@@ -518,8 +518,7 @@
   <section class="view" id="view-mchart">
     <div class="toolbar">
       <div class="filters" id="mcposfilter">
-        <button class="chip on" data-pos="ALL">All</button>
-        <button class="chip" data-pos="QB">QB</button>
+        <button class="chip on" data-pos="QB">QB</button>
         <button class="chip" data-pos="RB">RB</button>
         <button class="chip" data-pos="WR">WR</button>
       </div>
@@ -543,7 +542,7 @@
             <th data-k="team">Team</th>
             <th data-k="opp">Opp</th>
             <th data-k="mscore">Matchup</th>
-            <th data-k="mdetail">Detail</th>
+            <th data-k="mdetail" id="mcdetailhead">Cmp% Allowed</th>
             <th data-k="mrank">DvP Rank</th>
             <th data-k="mptsg">Pts/G Alwd</th>
             <th data-k="proj">Proj</th>
@@ -1113,7 +1112,7 @@ function applyData(proj, odds){
 }
 
 /* ---------------- Matchup Chart (player vs defense) ---------------- */
-let mcPos='ALL', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;
+let mcPos='QB', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;
 
 // "Previous-week starters" proxy from the workbook's usage column: per team,
 // the QB1 and the top-2 RB / top-3 WR by usage (ties broken by projection).
@@ -1157,9 +1156,15 @@ function mcCls(s){
   if(s>=3) return 'mc-tough';
   return 'mc-avoid';
 }
+const MC_DETAIL_LABEL={QB:'Cmp% Allowed', RB:'OL vs DL Line Yds', WR:'Catch% Allowed'};
 function renderMChart(){
   const body=document.getElementById('mcbody');
   if(!body) return;
+  const dh=document.getElementById('mcdetailhead');
+  if(dh){
+    dh.textContent = MC_DETAIL_LABEL[mcPos] || 'Detail';
+    if(mcSort.k==='mdetail') dh.insertAdjacentHTML('beforeend', `<span class="arr">${mcSort.dir<0?'▼':'▲'}</span>`);
+  }
   const starters = mcStarters ? mcStarterSet() : null;
   let rows=pool
     .filter(p=>(!starters || starters.has(p.id))
