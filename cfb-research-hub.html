@@ -210,6 +210,9 @@
   .statsearch{margin:0}
 
   /* ---------- mobile layout ---------- */
+  .csvbtn{display:inline-block;background:var(--panel);border:1px solid var(--line);color:var(--accent2);
+    border-radius:8px;padding:6px 12px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer}
+  .csvbtn:hover{border-color:var(--accent2)}
   .colstoggle{display:none;background:var(--panel);border:1px solid var(--line);color:var(--muted);
     font-family:var(--disp);font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:12px;
     padding:7px 14px;border-radius:8px;cursor:pointer}
@@ -463,7 +466,7 @@
       </div>
       <input class="search" id="psearch" placeholder="Search player / team…">
       <button class="colstoggle" data-toggle="cols">All Cols</button>
-      <button class="colstoggle" id="csvbtn" title="Download the current view as CSV">↓ CSV</button>
+      <button class="csvbtn" id="csvbtn" title="Download the current view as CSV">↓ CSV</button>
       <div class="spacer" style="flex:1"></div>
       <div class="refresh">Source: <b>RPS CFB Projections feed</b></div>
     </div>
@@ -521,6 +524,7 @@
         <button class="chip" data-pos="WR">WR</button>
       </div>
       <input class="search" id="mcsearch" placeholder="Search player / team…">
+      <button class="chip on" id="mcstarters" title="Top of each team's depth chart by usage: QB1, top-2 RB, top-3 WR">Starters only</button>
       <div class="spacer" style="flex:1"></div>
       <div class="refresh" id="mclegend">
         <span class="mc-chip mc-elite">8+ ELITE</span>
@@ -548,7 +552,7 @@
         <tbody id="mcbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
+    <p class="footnote">Starters only keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -1106,7 +1110,26 @@ function applyData(proj, odds){
 }
 
 /* ---------------- Matchup Chart (player vs defense) ---------------- */
-let mcPos='ALL', mcQ='', mcSort={k:'mscore', dir:-1};
+let mcPos='ALL', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;
+
+// "Previous-week starters" proxy from the workbook's usage column: per team,
+// the QB1 and the top-2 RB / top-3 WR by usage (ties broken by projection).
+// Usage must be > 0 so inactive and depth players drop out.
+const MC_KEEP = {QB:1, RB:2, WR:3};
+function mcStarterSet(){
+  const byTeamPos = {};
+  pool.forEach(p=>{
+    if(!(p.usage>0)) return;
+    (byTeamPos[p.team+'|'+p.pos] ||= []).push(p);
+  });
+  const keep = new Set();
+  Object.entries(byTeamPos).forEach(([key,list])=>{
+    const pos = key.split('|')[1];
+    list.sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
+    list.slice(0, MC_KEEP[pos]||1).forEach(p=>keep.add(p.id));
+  });
+  return keep;
+}
 
 function mcOppOf(p){
   const o=(p.opp||'').trim();
@@ -1134,8 +1157,10 @@ function mcCls(s){
 function renderMChart(){
   const body=document.getElementById('mcbody');
   if(!body) return;
+  const starters = mcStarters ? mcStarterSet() : null;
   let rows=pool
-    .filter(p=>(mcPos==='ALL'||p.pos===mcPos)&&(p.name.toLowerCase().includes(mcQ)||p.team.toLowerCase().includes(mcQ)))
+    .filter(p=>(!starters || starters.has(p.id))
+      &&(mcPos==='ALL'||p.pos===mcPos)&&(p.name.toLowerCase().includes(mcQ)||p.team.toLowerCase().includes(mcQ)))
     .map(p=>{const m=mcScore(p); return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n};});
   rows.sort((a,b)=>{
     let x=a[mcSort.k], y=b[mcSort.k];
@@ -1165,6 +1190,8 @@ document.querySelectorAll('#mcposfilter .chip').forEach(c=>{
 });
 const _mcs=document.getElementById('mcsearch');
 if(_mcs) _mcs.oninput=e=>{mcQ=e.target.value.toLowerCase();renderMChart();};
+const _mcst=document.getElementById('mcstarters');
+if(_mcst) _mcst.onclick=()=>{mcStarters=!mcStarters;_mcst.classList.toggle('on',mcStarters);renderMChart();};
 document.querySelectorAll('#mctable thead th').forEach(th=>{
   th.onclick=()=>{
     const k=th.dataset.k;
@@ -1298,8 +1325,12 @@ async function loadData(){
       const sel = document.getElementById('slatepick');
       if(sel && SLATES.length > 1){
         sel.innerHTML = SLATES.map(s=>
-          `<option value="${s.id}"${s.id===SLATE_ID?' selected':''}>${s.label} · ${s.players} players</option>`).join('');
+          `<option value="${s.id}"${s.id===SLATE_ID?' selected':''}>${s.label} · ${s.players} players · ${s.games} games</option>`).join('');
         sel.style.display = 'inline-block';
+        // the dropdown carries the slate + games info now, so the static
+        // "Main Slate · N games" label is redundant in multi-slate mode
+        const lbl=document.getElementById('slate-label');
+        if(lbl && lbl.parentElement) lbl.parentElement.style.display='none';
         sel.onchange = async ()=>{
           SLATE_ID = sel.value;
           localStorage.setItem('hubSlate', SLATE_ID);
