@@ -127,6 +127,14 @@
   td.l{text-align:left}
   .pname{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:.3px}
   .pteam{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:1px}
+  .mc-chip{display:inline-block;padding:2px 9px;border-radius:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px}
+  .mc-elite{background:rgba(46,204,113,.22);color:#2ecc71}
+  .mc-good{background:rgba(46,204,113,.12);color:#7ed6a5}
+  .mc-even{background:rgba(255,255,255,.08);color:var(--muted)}
+  .mc-tough{background:rgba(255,176,31,.15);color:var(--accent2)}
+  .mc-avoid{background:rgba(255,77,94,.2);color:var(--red)}
+  .mc-na{background:rgba(255,255,255,.04);color:var(--dim)}
+  #mclegend{display:flex;gap:6px;flex-wrap:wrap}
   .tlogo{width:20px;height:20px;object-fit:contain;vertical-align:-4px;margin-right:7px;flex-shrink:0}
   .pname{display:flex;align-items:center}
   .posbadge{display:inline-block;font-family:var(--mono);font-weight:600;font-size:10px;padding:3px 7px;border-radius:5px;letter-spacing:.5px}
@@ -424,6 +432,7 @@
   <nav class="tabs" id="tabs">
     <button class="active" data-view="proj">Projections<span class="tg">salary · proj · value</span></button>
     <button data-view="match">Matchups<span class="tg">vegas · totals · pace</span></button>
+    <button data-view="mchart">Matchup Chart<span class="tg">player vs defense</span></button>
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
     <button data-view="lev">Ownership<span class="tg">field % · leverage</span></button>
     <button data-view="qbstats">QB Stats<span class="tg">pff · usage · matchup</span></button>
@@ -493,6 +502,46 @@
     </div>
     <div class="gamegrid" id="gamegrid"></div>
     <p class="footnote">Each team shows its pass/run lean (blue = pass rate, green = rush rate) so you can instantly see whether a game environment feeds WRs or RBs. The "2-QB viable" flag fires on high-total, tight-spread games — where a second QB in the SUPER FLEX pays off. Pace shown as estimated plays per team.</p>
+  </section>
+
+  <!-- MATCHUP CHART (PFF-style: player quality vs opposing defense) -->
+  <section class="view" id="view-mchart">
+    <div class="toolbar">
+      <div class="filters" id="mcposfilter">
+        <button class="chip on" data-pos="ALL">All</button>
+        <button class="chip" data-pos="QB">QB</button>
+        <button class="chip" data-pos="RB">RB</button>
+        <button class="chip" data-pos="WR">WR</button>
+      </div>
+      <input class="search" id="mcsearch" placeholder="Search player / team…">
+      <div class="spacer" style="flex:1"></div>
+      <div class="refresh" id="mclegend">
+        <span class="mc-chip mc-elite">8+ ELITE</span>
+        <span class="mc-chip mc-good">6.5+ GOOD</span>
+        <span class="mc-chip mc-even">4.5+ EVEN</span>
+        <span class="mc-chip mc-tough">3+ TOUGH</span>
+        <span class="mc-chip mc-avoid">&lt;3 AVOID</span>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table id="mctable">
+        <thead>
+          <tr>
+            <th class="l" data-k="name">Player</th>
+            <th data-k="pos">Pos</th>
+            <th data-k="team">Team</th>
+            <th data-k="opp">Opp</th>
+            <th data-k="mscore">Matchup</th>
+            <th data-k="mrank">DvP Rank</th>
+            <th data-k="mptsg">Pts/G Alwd</th>
+            <th data-k="proj">Proj</th>
+            <th data-k="sal">Salary</th>
+          </tr>
+        </thead>
+        <tbody id="mcbody"></tbody>
+      </table>
+    </div>
+    <p class="footnote">Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -631,6 +680,7 @@ let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
+let DVP = {};          // {QB:{abbr:{rank,ptsG}},...} defense-vs-position
 
 const TEAMCOLOR={QB:"--blue",RB:"--green",WR:"--purple"};
 
@@ -1010,6 +1060,7 @@ function applyData(proj, odds){
   // stats tabs
   if(proj.stats) STATDATA = proj.stats;
   if(proj.teamLogos) LOGOS = proj.teamLogos;
+  if(proj.dvp) DVP = proj.dvp;
   // teams (pace / pass lean)
   TEAMS = proj.teams||{};
   // games: start from workbook baseline, then let live odds override lines
@@ -1037,11 +1088,81 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderLev();
+  renderProj();renderGames();renderLev();renderMChart();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
 }
+
+/* ---------------- Matchup Chart (player vs defense) ---------------- */
+let mcPos='ALL', mcQ='', mcSort={k:'mscore', dir:-1};
+
+function mcOppOf(p){
+  const o=(p.opp||'').trim();
+  if(o && o!=='0' && o!=='nan') return o;
+  const g=GAMES.find(g=>g.away===p.team||g.home===p.team);
+  return g ? (g.away===p.team?g.home:g.away) : null;
+}
+function mcScore(p){
+  const opp=mcOppOf(p);
+  const tbl=DVP[p.pos];
+  const n=(DVP.counts||{})[p.pos]||0;
+  if(!opp||!tbl||!tbl[opp]||n<2) return {score:null, opp, rank:null, ptsG:null, n};
+  const e=tbl[opp];
+  const score=+Math.min(10, Math.max(1, 1+9*((e.rank-1)/(n-1)))).toFixed(1);
+  return {score, opp, rank:e.rank, ptsG:e.ptsG, n};
+}
+function mcCls(s){
+  if(s==null) return 'mc-na';
+  if(s>=8) return 'mc-elite';
+  if(s>=6.5) return 'mc-good';
+  if(s>=4.5) return 'mc-even';
+  if(s>=3) return 'mc-tough';
+  return 'mc-avoid';
+}
+function renderMChart(){
+  const body=document.getElementById('mcbody');
+  if(!body) return;
+  let rows=pool
+    .filter(p=>(mcPos==='ALL'||p.pos===mcPos)&&(p.name.toLowerCase().includes(mcQ)||p.team.toLowerCase().includes(mcQ)))
+    .map(p=>{const m=mcScore(p); return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n};});
+  rows.sort((a,b)=>{
+    let x=a[mcSort.k], y=b[mcSort.k];
+    if(x==null) return 1; if(y==null) return -1;
+    if(typeof x==='string') return mcSort.dir*x.localeCompare(String(y));
+    return mcSort.dir*((+x)-(+y));
+  });
+  if(!rows.length){
+    body.innerHTML=`<tr><td colspan="9" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No players match.</td></tr>`;
+    return;
+  }
+  body.innerHTML=rows.map(p=>`
+    <tr>
+      <td class="l"><div class="pname">${logoImg(p.team)}${p.name}</div></td>
+      <td class="num" style="color:var(--muted)">${p.pos}</td>
+      <td class="num" style="color:var(--muted)">${p.team}</td>
+      <td class="num">${p.mopp?`<span style="display:inline-flex;align-items:center;gap:5px">${logoImg(p.mopp)}${p.mopp}</span>`:'—'}</td>
+      <td class="num"><span class="mc-chip ${mcCls(p.mscore)}">${p.mscore==null?'N/A':p.mscore.toFixed(1)}</span></td>
+      <td class="num" style="color:var(--muted)">${p.mrank==null?'—':'#'+p.mrank+' of '+p.mn}</td>
+      <td class="num">${p.mptsg==null?'—':p.mptsg}</td>
+      <td class="num" style="font-weight:600">${p.proj}</td>
+      <td class="num" style="color:var(--muted)">${p.sal?'$'+p.sal.toLocaleString():'—'}</td>
+    </tr>`).join('');
+}
+document.querySelectorAll('#mcposfilter .chip').forEach(c=>{
+  c.onclick=()=>{document.querySelectorAll('#mcposfilter .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');mcPos=c.dataset.pos;renderMChart();};
+});
+const _mcs=document.getElementById('mcsearch');
+if(_mcs) _mcs.oninput=e=>{mcQ=e.target.value.toLowerCase();renderMChart();};
+document.querySelectorAll('#mctable thead th').forEach(th=>{
+  th.onclick=()=>{
+    const k=th.dataset.k;
+    if(k===mcSort.k) mcSort.dir*=-1; else mcSort={k, dir:(k==='name'||k==='team'||k==='opp'||k==='pos')?1:-1};
+    document.querySelectorAll('#mctable thead th .arr').forEach(a=>a.remove());
+    th.insertAdjacentHTML('beforeend', `<span class="arr">${mcSort.dir<0?'▼':'▲'}</span>`);
+    renderMChart();
+  };
+});
 
 /* ---------------- Props (Underdog pickem) ---------------- */
 let PROPS = {items:[], as_of:"", source:""};
