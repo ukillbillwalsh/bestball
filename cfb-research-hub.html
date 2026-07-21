@@ -127,6 +127,12 @@
   td.l{text-align:left}
   .pname{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:.3px}
   .pteam{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:1px}
+  .spark{display:inline-flex;align-items:flex-end;gap:2px;height:22px}
+  .spark i{display:inline-block;width:5px;border-radius:1px 1px 0 0;min-height:2px}
+  .spark i.o{background:#2ecc71}
+  .spark i.u{background:rgba(255,77,94,.75)}
+  .avg-over{color:#2ecc71;font-weight:700}
+  .avg-under{color:var(--red);font-weight:700}
   .mc-chip{display:inline-block;padding:2px 9px;border-radius:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px}
   .mc-elite{background:rgba(46,204,113,.22);color:#2ecc71}
   .mc-good{background:rgba(46,204,113,.12);color:#7ed6a5}
@@ -662,6 +668,11 @@
             <th data-k="team">Team</th>
             <th class="l" data-k="stat">Stat</th>
             <th data-k="line">Line</th>
+            <th data-k="r5">L5</th>
+            <th data-k="r10">L10</th>
+            <th data-k="avg10">L10 Avg</th>
+            <th data-k="vals" class="l">Last 10</th>
+            <th data-k="mscore">Matchup</th>
             <th data-k="over">Over</th>
             <th data-k="under">Under</th>
           </tr>
@@ -669,7 +680,7 @@
         <tbody id="propbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Underdog pickem lines, refreshed with the daily pipeline. Compare a line against the projections tab to find edges — a rush-yards line well under your projection is a leverage signal for both pickem and DFS.</p>
+    <p class="footnote">Underdog pickem lines with hit-rate history from CFBD game logs. L5 / L10 count games where the player cleared today's line; L10 Avg colors green when the average sits above the line, red below. The bars chart the last 10 games against the line (green over, red under, oldest to newest). Matchup is the same 1-10 defense-vs-position grade as the Matchup Chart, joined for players on this week's slate. History spans the player's last two seasons until 2026 games accumulate.</p>
   </section>
 </main>
 
@@ -1166,7 +1177,7 @@ document.querySelectorAll('#mctable thead th').forEach(th=>{
 
 /* ---------------- Props (Underdog pickem) ---------------- */
 let PROPS = {items:[], as_of:"", source:""};
-let propSort = {k:"line", dir:-1};
+let propSort = {k:"r10", dir:-1};
 let propStatF = "ALL";
 let propQuery = "";
 
@@ -1204,28 +1215,55 @@ function applyProps(pr){
 function renderProps(){
   const body = document.getElementById('propbody');
   if(!body) return;
-  let rows = PROPS.items.filter(i=>
-    (propStatF==='ALL'||i.stat===propStatF) &&
-    ((i.player||'').toLowerCase().includes(propQuery)||(i.team||'').toLowerCase().includes(propQuery)));
+  const jn = s=>String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ').filter(x=>x&&!['jr','sr','ii','iii','iv','v'].includes(x)).join('');
+  let rows = PROPS.items
+    .filter(i=>(propStatF==='ALL'||i.stat===propStatF) &&
+      ((i.player||'').toLowerCase().includes(propQuery)||(i.team||'').toLowerCase().includes(propQuery)))
+    .map(i=>{
+      const r5 = i.n5 ? i.h5/i.n5 : null;
+      const r10 = i.n10 ? i.h10/i.n10 : null;
+      // matchup: join to the slate pool by name for pos/team/opp
+      const pp = pool.find(p=>jn(p.name)===jn(i.player));
+      const m = pp ? mcScore(pp) : {score:null};
+      return {...i, r5, r10, mscore:m.score};
+    });
   rows.sort((a,b)=>{
     let x=a[propSort.k], y=b[propSort.k];
+    if(propSort.k==='vals'){ x=a.n10||0; y=b.n10||0; }
     if(x==null) return 1; if(y==null) return -1;
     if(typeof x==='string') return propSort.dir*x.localeCompare(String(y));
     return propSort.dir*((+x)-(+y));
   });
   if(!rows.length){
-    body.innerHTML = `<tr><td colspan="6" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">
+    body.innerHTML = `<tr><td colspan="11" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">
       No lines${propStatF!=='ALL'||propQuery? ' match your filter':''}.
       ${PROPS.items.length? '' : 'Underdog posts CFB pickem lines close to the season — this tab fills in automatically once they do.'}
     </td></tr>`;
     return;
   }
+  const hitChip=(h,n)=>{
+    if(n==null||!n) return '<span class="mc-chip mc-na">—</span>';
+    const r=h/n;
+    const cls=r>=0.7?'mc-elite':r>=0.55?'mc-good':r>=0.4?'mc-even':r>=0.25?'mc-tough':'mc-avoid';
+    return `<span class="mc-chip ${cls}">${h}/${n}</span>`;
+  };
+  const spark=(vals,line)=>{
+    if(!vals||!vals.length) return '—';
+    const max=Math.max(...vals, line*1.2, 1);
+    return '<span class="spark">'+vals.map(v=>
+      `<i class="${v>line?'o':'u'}" style="height:${Math.max(2,Math.round(v/max*22))}px" title="${v}"></i>`).join('')+'</span>';
+  };
   body.innerHTML = rows.map(i=>`
     <tr>
       <td class="l"><div class="pname">${logoImg(i.team)}${i.player||'—'}</div></td>
       <td class="num" style="color:var(--muted)">${i.team||'—'}</td>
       <td class="l" style="color:var(--muted)">${i.stat||'—'}</td>
       <td class="num" style="font-weight:600;color:var(--accent2)">${i.line??'—'}</td>
+      <td class="num">${hitChip(i.h5,i.n5)}</td>
+      <td class="num">${hitChip(i.h10,i.n10)}</td>
+      <td class="num">${i.avg10==null?'—':`<span class="${i.avg10>i.line?'avg-over':'avg-under'}">${i.avg10}</span>`}</td>
+      <td class="l">${spark(i.vals,i.line)}</td>
+      <td class="num">${i.mscore==null?'<span class="mc-chip mc-na">—</span>':`<span class="mc-chip ${mcCls(i.mscore)}">${i.mscore.toFixed(1)}</span>`}</td>
       <td class="num">${fmtOdds(i.over)}</td>
       <td class="num">${fmtOdds(i.under)}</td>
     </tr>`).join('');
