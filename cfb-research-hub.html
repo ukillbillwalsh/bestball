@@ -850,13 +850,13 @@ function renderStacks(){
     // pass-volume gate only when team data exists
     const tr=TEAMS[team];
     if(tr&&tr.passRate!=null&&tr.passRate<45) return;
-    const marked = markedStarters();
-    const isIn = p=>!marked||marked.has(p.id);
-    const qbs=pool.filter(p=>p.team===team&&p.pos==='QB'&&p.proj>0&&isIn(p))
+    const qbMarks = markedStarters('QB');
+    const wrMarks = markedStarters('WR');
+    const qbs=pool.filter(p=>p.team===team&&p.pos==='QB'&&p.proj>0&&(!qbMarks||qbMarks.has(p.id)))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!qbs.length) return;
     const qb=qbs[0];
-    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&isIn(p))
+    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&(!wrMarks||wrMarks.has(p.id)))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!wrs.length) return;
     const g=GAMES.find(x=>x.away===team||x.home===team);
@@ -1196,26 +1196,31 @@ let mcPos='QB', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;
 // the QB1 and the top-2 RB / top-3 WR by usage (ties broken by projection).
 // Usage must be > 0 so inactive and depth players drop out.
 const MC_KEEP = {QB:1, RB:2, WR:3};
-function markedStarters(){
-  // real STARTER marks from the workbook (exported once Bruce's
-  // add_starter_columns.py has run on the slate's statpage)
-  return pool.some(p=>p.starter===true)
-    ? new Set(pool.filter(p=>p.starter===true).map(p=>p.id))
-    : null;
+function markedStarters(pos){
+  // real STARTER marks from the workbook for ONE position (exported once
+  // add_starter_columns.py has run on the slate's statpage).  Per-position
+  // so a slate with marked QBs but an unmarked RB sheet still shows RBs
+  // via the usage proxy instead of an empty view.
+  const marks = pool.filter(p=>p.pos===pos&&p.starter===true);
+  return marks.length ? new Set(marks.map(p=>p.id)) : null;
 }
-function mcStarterSet(){
-  const marked = markedStarters();
-  if(marked) return marked;
-  const byTeamPos = {};
+function proxyStarters(pos){
+  const byTeam = {};
   pool.forEach(p=>{
-    if(!(p.usage>0)) return;
-    (byTeamPos[p.team+'|'+p.pos] ||= []).push(p);
+    if(p.pos!==pos||!(p.usage>0)) return;
+    (byTeam[p.team] ||= []).push(p);
   });
   const keep = new Set();
-  Object.entries(byTeamPos).forEach(([key,list])=>{
-    const pos = key.split('|')[1];
+  Object.values(byTeam).forEach(list=>{
     list.sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     list.slice(0, MC_KEEP[pos]||1).forEach(p=>keep.add(p.id));
+  });
+  return keep;
+}
+function mcStarterSet(){
+  const keep = new Set();
+  ['QB','RB','WR'].forEach(pos=>{
+    (markedStarters(pos)||proxyStarters(pos)).forEach(id=>keep.add(id));
   });
   return keep;
 }
