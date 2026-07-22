@@ -526,7 +526,7 @@
           <tbody id="stackbody"></tbody>
         </table>
       </div>
-      <p class="footnote">Chalk = the QB with his highest-usage receiver (a second receiver joins when his usage runs close to the top guy's). Leverage = the same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Lev = combined projection per point of combined ownership; sorted so the best leverage floats to the top. QBs qualify by team pass rate when lines and team data exist.</p>
+      <p class="footnote">Chalk = the QB with his highest-usage receiver (a second receiver joins when his usage runs close to the top guy's). Leverage = the same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Lev = combined projection per point of combined ownership; sorted so the best leverage floats to the top. QBs qualify by team pass rate when lines and team data exist, and only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
     </div>
     <p class="footnote">Each team shows its pass/run lean (blue = pass rate, green = rush rate) so you can instantly see whether a game environment feeds WRs or RBs. The "2-QB viable" flag fires on high-total, tight-spread games — where a second QB in the SUPER FLEX pays off. Pace shown as estimated plays per team.</p>
   </section>
@@ -569,7 +569,7 @@
         <tbody id="mcbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Starters only keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
+    <p class="footnote">Starters only uses the STARTER marks from your workbook when the export carries them; otherwise it keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -737,11 +737,11 @@ let pool = [];
 function pct(arr,v){const s=[...arr].sort((a,b)=>a-b);return s.filter(x=>x<=v).length/s.length}
 function buildPool(){
   pool = PLAYERS.map((p,i)=>{
-    const [name,pos,team,opp,sal,proj,ceil,own,usage,floor,dkGames]=p;
+    const [name,pos,team,opp,sal,proj,ceil,own,usage,floor,dkGames,starter]=p;
     const val=+(proj/(sal/1000)).toFixed(2);
     const g=GAMES.find(g=>g.away===team||g.home===team);
     const itt=g?(g.away===team?g.aTot:g.hTot):0;
-    return {id:i,name,pos,team,opp,sal,proj,ceil,own,usage,floor:(floor??null),dkGames:(dkGames??null),val,itt,g};
+    return {id:i,name,pos,team,opp,sal,proj,ceil,own,usage,floor:(floor??null),dkGames:(dkGames??null),starter:(starter??null),val,itt,g};
   });
   const projs=pool.map(p=>p.proj), owns=pool.map(p=>p.own);
   pool.forEach(p=>{p.lev=Math.round((pct(projs,p.proj)-pct(owns,p.own))*100)});
@@ -850,11 +850,13 @@ function renderStacks(){
     // pass-volume gate only when team data exists
     const tr=TEAMS[team];
     if(tr&&tr.passRate!=null&&tr.passRate<45) return;
-    const qbs=pool.filter(p=>p.team===team&&p.pos==='QB'&&p.proj>0)
+    const marked = markedStarters();
+    const isIn = p=>!marked||marked.has(p.id);
+    const qbs=pool.filter(p=>p.team===team&&p.pos==='QB'&&p.proj>0&&isIn(p))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!qbs.length) return;
     const qb=qbs[0];
-    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0)
+    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&isIn(p))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!wrs.length) return;
     const g=GAMES.find(x=>x.away===team||x.home===team);
@@ -1137,7 +1139,7 @@ document.querySelectorAll('.colstoggle').forEach(btn=>{btn.onclick=()=>{
 const SAMPLE={"slate":{"label":"Sample Slate (demo)","games":7},"teams":{"PSU":{"pace":55.3,"passRate":42},"CLEM":{"pace":55.3,"passRate":55},"UCONN":{"pace":56.7,"passRate":55},"ARMY":{"pace":56.7,"passRate":14},"GT":{"pace":55.1,"passRate":46},"BYU":{"pace":55.1,"passRate":43},"MIAOH":{"pace":56.4,"passRate":45},"FRES":{"pace":56.4,"passRate":46},"UNT":{"pace":52.4,"passRate":52},"SDSU":{"pace":52.4,"passRate":37},"UVA":{"pace":51.8,"passRate":48},"MIZZ":{"pace":51.8,"passRate":44},"LSU":{"pace":54.8,"passRate":56},"UH":{"pace":54.8,"passRate":41}},"games":[{"away":"PSU","home":"CLEM","total":48.5,"spread":3,"fav":"CLEM","aTot":22.8,"hTot":25.8,"pace":55.3,"aPass":42,"hPass":55},{"away":"UCONN","home":"ARMY","total":43.5,"spread":9.5,"fav":"ARMY","aTot":17,"hTot":26.5,"pace":56.7,"aPass":55,"hPass":14},{"away":"GT","home":"BYU","total":55.5,"spread":4,"fav":"BYU","aTot":25.8,"hTot":29.8,"pace":55.1,"aPass":46,"hPass":43},{"away":"MIAOH","home":"FRES","total":41.5,"spread":5.5,"fav":"FRES","aTot":18,"hTot":23.5,"pace":56.4,"aPass":45,"hPass":46},{"away":"UNT","home":"SDSU","total":52.5,"spread":-5.5,"fav":"UNT","aTot":29,"hTot":23.5,"pace":52.4,"aPass":52,"hPass":37},{"away":"UVA","home":"MIZZ","total":44.5,"spread":4,"fav":"MIZZ","aTot":20.2,"hTot":24.2,"pace":51.8,"aPass":48,"hPass":44},{"away":"LSU","home":"UH","total":41.5,"spread":2.5,"fav":"UH","aTot":19.5,"hTot":22,"pace":54.8,"aPass":56,"hPass":41}],"players":[{"name":"Cale Hellums","pos":"QB","team":"ARMY","opp":"UCONN","sal":8200,"fd":11200,"proj":30.6,"own":55.3,"usage":38.9,"ceil":47.0},{"name":"Haynes King","pos":"QB","team":"GT","opp":"BYU","sal":9000,"fd":12500,"proj":29.1,"own":40.9,"usage":39.4,"ceil":44.7},{"name":"Bear Bachmeier","pos":"QB","team":"BYU","opp":"GT","sal":8700,"fd":10200,"proj":24.4,"own":24.6,"usage":24.5,"ceil":36.7},{"name":"Conner Weigman","pos":"QB","team":"UH","opp":"LSU","sal":8500,"fd":10600,"proj":21.5,"own":18.7,"usage":25.9,"ceil":32.4},{"name":"Bert Emanuel Jr.","pos":"QB","team":"SDSU","opp":"UNT","sal":7200,"fd":7000,"proj":21.4,"own":9.2,"usage":4.8,"ceil":31.3},{"name":"Michael Van Buren Jr.","pos":"QB","team":"LSU","opp":"UH","sal":7500,"fd":8400,"proj":20.0,"own":3.1,"usage":4.0,"ceil":29.2},{"name":"Ahmad Hardy","pos":"RB","team":"MIZZ","opp":"UVA","sal":6900,"fd":10800,"proj":24.5,"own":45.6,"usage":46.8,"ceil":40.6},{"name":"Lucky Sutton","pos":"RB","team":"SDSU","opp":"UNT","sal":5700,"fd":8300,"proj":18.8,"own":49.1,"usage":48.7,"ceil":31.3},{"name":"Cam Edwards","pos":"RB","team":"UCONN","opp":"ARMY","sal":6200,"fd":9000,"proj":17.4,"own":11.1,"usage":0,"ceil":27.0},{"name":"Caleb Hawkins","pos":"RB","team":"UNT","opp":"SDSU","sal":9500,"fd":12000,"proj":16.9,"own":38.8,"usage":44.0,"ceil":27.9},{"name":"Rayshon Luke","pos":"RB","team":"FRES","opp":"MIAOH","sal":5300,"fd":8600,"proj":15.6,"own":3.2,"usage":25.4,"ceil":25.1},{"name":"Adam Randall","pos":"RB","team":"CLEM","opp":"PSU","sal":6100,"fd":8100,"proj":15.5,"own":20.1,"usage":42.0,"ceil":25.5},{"name":"Skyler Bell","pos":"WR","team":"UCONN","opp":"ARMY","sal":7900,"fd":10400,"proj":17.8,"own":16.8,"usage":30.4,"ceil":31.6},{"name":"Amare Thomas","pos":"WR","team":"UH","opp":"LSU","sal":6300,"fd":9400,"proj":17.8,"own":30.7,"usage":36.2,"ceil":31.9},{"name":"Wyatt Young","pos":"WR","team":"UNT","opp":"SDSU","sal":7100,"fd":9700,"proj":16.9,"own":31.1,"usage":30.8,"ceil":30.1},{"name":"Parker Kingston","pos":"WR","team":"BYU","opp":"GT","sal":6200,"fd":8700,"proj":16.4,"own":30,"usage":25,"ceil":28.9},{"name":"Cameron Dorner","pos":"WR","team":"UNT","opp":"SDSU","sal":4800,"fd":8000,"proj":16.2,"own":8.3,"usage":17.3,"ceil":28.3},{"name":"Josiah Freeman","pos":"WR","team":"FRES","opp":"MIAOH","sal":5700,"fd":8200,"proj":15.9,"own":7.5,"usage":27.5,"ceil":28.1}],"stats":{"QB":{"cols":["Name","TeamAbbrev","VS","DK Salary","FD $","DK PROJ","GM","SNAP%","PASS/GM","YPA","PASS GRADE","ACC %","BIG TIME","ADOT","D PASSEXP ALW","PASS TD","RUSH/GM","RUSH YPA","RUSH GRADE","RUSHING TD","DVP","QB USG"],"rows":[["Cale Hellums","ARMY","UCONN",8200,11200,30.6,11,100,6.4,7.2,67.1,60.9,9,14.7,1.5,3,24.3,4,75.2,15,21.7,0.389],["Haynes King","GT","BYU",9000,12500,29.1,11,100,29.5,8.3,84.7,81.6,4.2,7,1.5,12,15.7,5.7,76,15,17.9,0.394],["Bear Bachmeier","BYU","GT",8700,10200,24.4,13,92.6,27,7.7,71.9,74.2,3.2,8.5,1.5,14,10.5,4.6,76.8,11,24.4,0.245],["Conner Weigman","UH","LSU",8500,10600,21.5,12,100,26.6,7.8,59.5,71.5,4.3,9.1,1.6,21,12.2,5.1,78,11,18.9,0.259],["Bert Emanuel Jr.","SDSU","UNT",7200,7000,21.4,5,null,1.8,4.1,49.4,71.4,0,2.3,1.7,0,2.8,3.8,67.4,0,23.6,0.048],["Michael Van Buren Jr.","LSU","UH",7500,8400,20.0,6,100,21,5.9,64.4,76.1,3,7,1.4,5,5.3,5.1,57.1,1,17.4,0.04],["E.J. Warner","FRES","MIAOH",7800,9200,19.5,9,100,28.3,7.1,71.3,79.9,3,6.8,1.5,12,3.7,5.8,59.5,1,19.3,0.072],["Drew Mestemaker","UNT","SDSU",4500,11000,18.8,13,88.2,32.2,9.9,89.8,77.9,5.4,8.4,1.5,31,3.3,4.5,65.1,5,14.4,0.07]]},"RB":{"cols":["NAME","TEAM","VS","POS","DK $","FD $","DK PROJ","FD PROJ","GM","RUSH GRADE","BRKAWY %","D RUSH EXP","YCO/ATT","OL YDS","DL YDS","Y/Att","RUSH TD","TGT/GM","REC","ADOT","YPR","REC TD","DVP","SNAP%","RUSH/GM","RUSH USG"],"rows":[["Ahmad Hardy","MIZZ","UVA","RB",6900,10800,24.5,21.3,12,92.3,47.7,0.926,4.6,3.1,2.8,6.4,16,0.583,6,-1.1,3.7,0,18.8,62.0,20.2,0.468],["Lucky Sutton","SDSU","UNT","RB",5700,8300,18.8,15.6,12,89.3,16.7,1.0,3.4,3.5,3.2,5.2,10,0.833,5,0.4,-0.4,0,25.5,91.3,19.9,0.487],["Cam Edwards","UCONN","ARMY","RB",6200,9000,17.4,16.6,12,82.9,39.4,0.85,3.5,3.0,3.1,5.6,14,1.8,19,1,9.8,1,18.8,null,16.5,0],["Caleb Hawkins","UNT","SDSU","RB",9500,12000,16.9,12.7,12,93,33.3,0.875,4.5,3.4,2.9,6.2,23,2.7,29,-2.4,11.9,3,13.9,73.5,16.7,0.44],["Rayshon Luke","FRES","MIAOH","RB",5300,8600,15.6,14.0,12,86.6,47.9,0.894,4.7,3.1,2.6,6.5,6,3.2,37,-0.8,6.3,2,18.8,16.2,9,0.254],["Adam Randall","CLEM","PSU","RB",6100,8100,15.5,14.2,12,82.1,28,0.953,3.2,3.1,3.0,4.9,9,3.6,31,3,7.8,3,23.4,65.5,13.1,0.42],["Noah Short","ARMY","UCONN","RB",5000,7200,14.6,13.6,11,73.4,45.9,0.935,3.2,2.8,3.3,6.2,1,3.5,22,13.2,12.7,1,30.8,92.1,8.1,0.137],["J'Mari Taylor","UVA","MIZZ","RB",8300,9500,14.6,13.0,13,80,33.9,0.95,3.4,3.1,2.7,4.8,14,4.2,43,0.2,5.9,1,15.4,58.1,17.1,0.416]]},"WR":{"cols":["NAME","TEAM","VS","POS","DK $","FD $","DK PROJ","FD PROJ","GM","REC GRADE","ADOT","YPRR","PASS D XPLSV","Y/REC","SLOT%","TD","RUSH YDS","RSH TD","TGT SHARE","TGT/GM","DVP 25","SNAP%","PASS USG"],"rows":[["Skyler Bell","UCONN","ARMY","WR",7900,10400,17.8,15.3,12,85.3,8.2,3.1,1.5,12.6,36.6,13,5,0,30.4,11.7,36.2,null,0.321],["Amare Thomas","UH","LSU","WR",6300,9400,17.8,15.3,12,79.9,9.6,2.5,1.6,15.4,71.9,10,11,0,36.2,7.4,27.9,92.9,0.223],["Wyatt Young","UNT","SDSU","WR",7100,9700,16.9,14.9,13,91.1,10.5,3.9,1.5,19.2,92.1,10,16,1,30.8,6.6,26.2,60.3,0.182],["Parker Kingston","BYU","GT","WR",6200,8700,16.4,13.9,13,74.5,9.1,2.7,1.5,13.9,61.5,5,103,3,25,6.8,32.3,60.3,0.245],["Cameron Dorner","UNT","SDSU","WR",4800,8000,16.2,13.7,13,85.1,11.3,2.6,1.5,16.9,10.1,6,2,0,17.3,4.5,26.2,85.3,0.117],["Josiah Freeman","FRES","MIAOH","WR",5700,8200,15.9,12.9,11,69,11.6,1.6,1.5,11,18.8,6,8,0,27.5,7,38.5,73.0,0.219],["Donovan Olugbode","MIZZ","UVA","WR",3700,6300,15.5,12.5,12,75.9,12.6,2.0,1.5,14.1,13.5,2,0,0,12.7,3,29.6,56.3,0.128],["T.J. Moore","CLEM","PSU","WR",4800,7600,15.3,12.8,12,70.9,12.2,2.1,1.4,16.4,7.9,4,8,0,19,6.1,31.8,92.0,0.156]]}}};
 /* ---------------- data loader ---------------- */
 // Map a projections.json player object -> the compact PLAYERS array the UI uses.
-function toPlayerRow(p){return [p.name,p.pos,p.team,p.opp,p.sal,p.proj,p.ceil,(p.own??0),(p.usage??0),(p.floor??null),(p.dkGames??null)];}
+function toPlayerRow(p){return [p.name,p.pos,p.team,p.opp,p.sal,p.proj,p.ceil,(p.own??0),(p.usage??0),(p.floor??null),(p.dkGames??null),(p.starter??null)];}
 
 // Derive implied team totals from a live total+spread (overrides workbook baseline).
 function impliedTotals(total,spread){
@@ -1194,7 +1196,16 @@ let mcPos='QB', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;
 // the QB1 and the top-2 RB / top-3 WR by usage (ties broken by projection).
 // Usage must be > 0 so inactive and depth players drop out.
 const MC_KEEP = {QB:1, RB:2, WR:3};
+function markedStarters(){
+  // real STARTER marks from the workbook (exported once Bruce's
+  // add_starter_columns.py has run on the slate's statpage)
+  return pool.some(p=>p.starter===true)
+    ? new Set(pool.filter(p=>p.starter===true).map(p=>p.id))
+    : null;
+}
 function mcStarterSet(){
+  const marked = markedStarters();
+  if(marked) return marked;
   const byTeamPos = {};
   pool.forEach(p=>{
     if(!(p.usage>0)) return;
