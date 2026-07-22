@@ -133,16 +133,6 @@
   .spark i.u{background:rgba(255,77,94,.75)}
   .avg-over{color:#2ecc71;font-weight:700}
   .avg-under{color:var(--red);font-weight:700}
-  .pt-input{background:var(--bg2);color:var(--ink);border:1px solid rgba(255,255,255,.12);
-    border-radius:6px;padding:3px 6px;font-family:var(--mono);font-size:12px;width:60px;text-align:right}
-  .pt-input:focus{border-color:var(--accent2);outline:none}
-  .pt-input.wide{width:180px;text-align:left}
-  .pt-input.edited{border-color:var(--accent2);background:rgba(255,176,31,.08)}
-  .pt-check{width:18px;height:18px;accent-color:#2ecc71;cursor:pointer;margin:0}
-  .pt-starter td{background:rgba(46,204,113,.04)}
-  .pt-suggest{color:var(--accent2);font-weight:700;cursor:help}
-  .pt-suggest.gap-up{color:#2ecc71}
-  .pt-suggest.gap-dn{color:var(--red)}
   .mc-chip{display:inline-block;padding:2px 9px;border-radius:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px}
   .mc-elite{background:rgba(46,204,113,.22);color:#2ecc71}
   .mc-good{background:rgba(46,204,113,.12);color:#7ed6a5}
@@ -453,7 +443,6 @@
     <button class="active" data-view="proj">Projections<span class="tg">salary · proj · value</span></button>
     <button data-view="match">Matchups<span class="tg">vegas · totals · pace</span></button>
     <button data-view="mchart">Matchup Chart<span class="tg">player vs defense</span></button>
-    <button data-view="projtool">Projection Tool<span class="tg">edit · save · export</span></button>
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
     <button data-view="lev">Ownership<span class="tg">field % · leverage</span></button>
     <button data-view="qbstats">QB Stats<span class="tg">pff · usage · matchup</span></button>
@@ -564,46 +553,6 @@
       </table>
     </div>
     <p class="footnote">Starters only keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
-  </section>
-
-  <!-- PROJECTION TOOL: fast weekly editing of DKManual / snap% / notes -->
-  <section class="view" id="view-projtool">
-    <div class="toolbar">
-      <div class="filters" id="ptposfilter">
-        <button class="chip on" data-pos="QB">QB</button>
-        <button class="chip" data-pos="RB">RB</button>
-        <button class="chip" data-pos="WR">WR</button>
-      </div>
-      <input class="search" id="ptsearch" placeholder="Search player / team…">
-      <button class="chip" id="ptstartersonly" title="Show only players you've flagged as starters">Starters only</button>
-      <div class="spacer" style="flex:1"></div>
-      <button class="csvbtn" id="ptexport" title="Download DKManual + Notes to paste back into the workbook">↓ Export</button>
-      <button class="csvbtn" id="ptreset" style="color:var(--red);border-color:transparent" title="Discard all edits for this slate">Reset</button>
-    </div>
-    <div class="tablewrap">
-      <table id="pttable">
-        <thead>
-          <tr>
-            <th style="width:32px" title="Starter: fills Snap% and marks the player as a projected starter"></th>
-            <th class="l" data-k="name">Player</th>
-            <th data-k="team">Team</th>
-            <th data-k="opp">Opp</th>
-            <th data-k="sal">Salary</th>
-            <th data-k="snap" title="Last game's snap %; auto-fills when you check starter">Snap%</th>
-            <th data-k="dvp" title="Fantasy points allowed to this position by the opponent">DvP</th>
-            <th data-k="mscore" title="Same 1-10 matchup grade as the Matchup Chart">Match</th>
-            <th data-k="suggest" title="Formula-driven suggestion using usage, DvP, team total, matchup grade">Sugg</th>
-            <th data-k="myproj" title="Your DK PRJ from the workbook (or your override this session)">My PRJ</th>
-            <th data-k="manual" title="Manual +/- adjustment applied on top of the workbook formula">DKManual</th>
-            <th data-k="etr" title="ETR's DK projection">ETR</th>
-            <th data-k="rg" title="RotoGrinders' DK projection">RG</th>
-            <th class="l">Notes</th>
-          </tr>
-        </thead>
-        <tbody id="ptbody"></tbody>
-      </table>
-    </div>
-    <p class="footnote">Edits save per-slate in this browser only (localStorage). Export writes a CSV keyed by Name + Team with DKManual, Snap% override, Starter, and Notes — paste those columns back into the QBNEW/RBNEW/WRNEW sheets and the workbook formulas do the rest. Sugg = formula-driven suggestion (usage × pace × DvP × matchup grade); consider it a starting point, not a truth. Starter defaults Snap% to last-game value from the workbook when >=40%, else a position-average (QB 100 · RB 65 · WR 85), always editable.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -747,8 +696,6 @@ let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
-let PT = [];           // projection tool payload {pos,name,team,opp,sal,snap,dvp,tt,ypa,...}
-let PT_EDITS = {};     // slate-scoped user edits {playerKey: {manual,snap,starter,myproj,notes}}
 let DVP = {};          // {QB:{abbr:{rank,ptsG,cmpPct/catchPct}},...} defense-vs-position
 let LINES = {};        // {abbr:{ol,dl}} line yards: OL created / DL conceded per rush
 
@@ -1130,8 +1077,6 @@ function applyData(proj, odds){
   if(proj.stats) STATDATA = proj.stats;
   if(proj.teamLogos) LOGOS = proj.teamLogos;
   if(proj.dvp) DVP = proj.dvp;
-  PT = proj.projtool || [];
-  ptLoadEdits();
   LINES = proj.lines || {};
   // teams (pace / pass lean)
   TEAMS = proj.teams||{};
@@ -1160,245 +1105,11 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderLev();renderMChart();ptLoadEdits();renderPT();
+  renderProj();renderGames();renderLev();renderMChart();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
 }
-
-/* ---------------- Projection Tool ---------------- */
-let ptPos='QB', ptQ='', ptStartersOnly=false, ptSort={k:'sal', dir:-1};
-const PT_SNAP_FLOOR = 40;                                    // below this, use position default on starter check
-const PT_SNAP_DEFAULT = {QB:100, RB:65, WR:85};
-
-function ptKey(p){ return p.name+'|'+p.team; }
-function ptStorageKey(){ return 'ptEdits_' + (SLATE_ID||'main'); }
-function ptLoadEdits(){
-  try{ PT_EDITS = JSON.parse(localStorage.getItem(ptStorageKey())) || {}; }
-  catch(e){ PT_EDITS = {}; }
-}
-function ptSaveEdits(){
-  try{ localStorage.setItem(ptStorageKey(), JSON.stringify(PT_EDITS)); }
-  catch(e){ console.warn('projection edits save failed', e); }
-}
-function ptEdit(p){ return PT_EDITS[ptKey(p)] || {}; }
-function ptSetEdit(p, patch){
-  const k = ptKey(p);
-  const cur = PT_EDITS[k] || {};
-  PT_EDITS[k] = {...cur, ...patch};
-  // if every field is empty/null, prune the record so exports stay clean
-  const e = PT_EDITS[k];
-  if(e.manual==null && e.snap==null && !e.starter && e.myproj==null && !e.notes){
-    delete PT_EDITS[k];
-  }
-  ptSaveEdits();
-}
-
-// Suggested projection: usage × pace × DvP factor × matchup grade
-// The gap vs your workbook DK PRJ is the value the tool provides.
-function ptSuggest(p){
-  const e = ptEdit(p);
-  const snap = e.snap!=null ? e.snap : (p.snap||0);
-  if(!snap) return null;
-  // DvP factor: rank / (max/2). Rank 1 = stingiest -> 0.5x; rank max -> ~1.5x
-  const dvpTbl = DVP[p.pos], maxRank = (DVP.counts||{})[p.pos] || 0;
-  let dvpFactor = 1.0;
-  if(dvpTbl && p.opp && dvpTbl[p.opp] && maxRank){
-    dvpFactor = 0.5 + (dvpTbl[p.opp].rank / (maxRank/2)) * 0.5;
-    dvpFactor = Math.max(0.65, Math.min(1.35, dvpFactor));
-  }
-  // Team-total factor: 30 = neutral, scale linearly
-  const tt = p.tt || (dvpTbl && dvpTbl[p.opp]?.ptsG) || 28;
-  const ttFactor = Math.max(0.75, Math.min(1.30, tt/28));
-  const snapFactor = snap/100;
-  let base;
-  if(p.pos==='QB'){
-    // pass volume × YPA + rush volume, translated to DK
-    const passYds = (p.pass_gm||30) * (p.ypa||7);
-    const rushYds = (p.rush_gm||0) * (p.rush_ypa||4);
-    base = passYds*0.04 + rushYds*0.10 + (p.pass_gm||30)*0.11 + 3;  // ~1.5 TD baked in
-  } else if(p.pos==='RB'){
-    const rushYds = (p.rush_gm||12) * (p.ypa||4.5);
-    const recYds = (p.tgt_gm||1.5) * 0.65 * (p.ypr||8);
-    const rec = (p.tgt_gm||1.5) * 0.65;
-    base = rushYds*0.10 + recYds*0.10 + rec + 3.5;
-  } else {
-    const yds = (p.tgt_gm||5) * 0.62 * (p.ypr||12);
-    const rec = (p.tgt_gm||5) * 0.62;
-    base = yds*0.10 + rec + 2.5;
-  }
-  return +(base * snapFactor * dvpFactor * ttFactor).toFixed(1);
-}
-
-function ptMyProj(p){
-  const e = ptEdit(p);
-  if(e.myproj!=null) return e.myproj;
-  return p.dkproj!=null ? p.dkproj : null;
-}
-
-function renderPT(){
-  const body = document.getElementById('ptbody');
-  if(!body) return;
-  const rows = PT
-    .filter(p=>p.pos===ptPos)
-    .filter(p=>{
-      if(ptStartersOnly && !ptEdit(p).starter) return false;
-      if(ptQ){
-        return (p.name||'').toLowerCase().includes(ptQ)
-            || (p.team||'').toLowerCase().includes(ptQ);
-      }
-      return true;
-    })
-    .map(p=>{
-      const m = mcScore(p);
-      return {...p, mscore: m.score, suggest: ptSuggest(p), myproj: ptMyProj(p)};
-    });
-  rows.sort((a,b)=>{
-    let x=a[ptSort.k], y=b[ptSort.k];
-    if(x==null) return 1; if(y==null) return -1;
-    if(typeof x==='string') return ptSort.dir*x.localeCompare(String(y));
-    return ptSort.dir*((+x)-(+y));
-  });
-  if(!rows.length){
-    body.innerHTML = `<tr><td colspan="14" style="padding:46px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">
-      No players match.${PT.length===0? ' (Rebuild the statpage export to populate this tab.)' : ''}
-    </td></tr>`;
-    return;
-  }
-  body.innerHTML = rows.map(p=>{
-    const e = ptEdit(p);
-    const starter = !!e.starter;
-    const snap = e.snap!=null ? e.snap : (p.snap||'');
-    const snapEdited = e.snap!=null && e.snap!==p.snap;
-    const gap = (p.suggest!=null && p.myproj!=null) ? +(p.suggest - p.myproj).toFixed(1) : null;
-    const gapCls = gap==null ? '' : (gap>=1.5 ? 'gap-up' : gap<=-1.5 ? 'gap-dn' : '');
-    const suggTitle = p.suggest!=null && gap!=null
-      ? `Sugg ${p.suggest} vs My PRJ ${p.myproj} (gap ${gap>=0?'+':''}${gap})`
-      : 'Not enough inputs (need snap% + opponent)';
-    return `
-    <tr class="${starter?'pt-starter':''}" data-key="${ptKey(p).replace(/"/g,'&quot;')}">
-      <td><input type="checkbox" class="pt-check" data-fld="starter" ${starter?'checked':''}></td>
-      <td class="l"><div class="pname">${logoImg(p.team)}${p.name}</div></td>
-      <td class="num" style="color:var(--muted)">${p.team||''}</td>
-      <td class="num">${p.opp ? `<span style="display:inline-flex;align-items:center;gap:5px">${logoImg(p.opp)}${p.opp}</span>` : '—'}</td>
-      <td class="num" style="color:var(--muted)">$${(p.sal||0).toLocaleString()}</td>
-      <td class="num"><input class="pt-input ${snapEdited?'edited':''}" data-fld="snap" type="number" step="1" min="0" max="100" value="${snap===''?'':snap}" placeholder="—"></td>
-      <td class="num" style="color:var(--muted)">${p.dvp==null?'—':p.dvp}</td>
-      <td class="num">${p.mscore==null? '<span class="mc-chip mc-na">—</span>' : `<span class="mc-chip ${mcCls(p.mscore)}">${p.mscore.toFixed(1)}</span>`}</td>
-      <td class="num"><span class="pt-suggest ${gapCls}" title="${suggTitle}">${p.suggest==null?'—':p.suggest}</span></td>
-      <td class="num"><input class="pt-input ${e.myproj!=null?'edited':''}" data-fld="myproj" type="number" step="0.1" value="${p.myproj==null?'':p.myproj}" placeholder="${p.dkproj==null?'—':p.dkproj}"></td>
-      <td class="num"><input class="pt-input ${e.manual!=null?'edited':''}" data-fld="manual" type="number" step="0.1" value="${e.manual==null?(p.manual==null?'':p.manual):e.manual}" placeholder="0"></td>
-      <td class="num" style="color:var(--muted)">${p.etr==null?'—':p.etr}</td>
-      <td class="num" style="color:var(--muted)">${p.rg==null?'—':p.rg}</td>
-      <td class="l"><input class="pt-input wide ${e.notes?'edited':''}" data-fld="notes" type="text" value="${(e.notes||'').replace(/"/g,'&quot;')}" placeholder="…"></td>
-    </tr>`;
-  }).join('');
-  // wire the inline controls in one delegated pass
-  body.querySelectorAll('tr[data-key]').forEach(tr=>{
-    const key = tr.dataset.key;
-    const p = PT.find(x=>ptKey(x)===key);
-    if(!p) return;
-    tr.querySelectorAll('.pt-input, .pt-check').forEach(el=>{
-      const fld = el.dataset.fld;
-      const handler = ()=>{
-        let v;
-        if(fld==='starter'){
-          v = el.checked || null;
-          if(v && (ptEdit(p).snap==null)){
-            // fill snap: last-game value if >= floor, else position default
-            const cur = p.snap;
-            const filled = (cur!=null && cur>=PT_SNAP_FLOOR) ? cur : PT_SNAP_DEFAULT[p.pos];
-            ptSetEdit(p, {starter:true, snap:filled});
-            renderPT();
-            return;
-          }
-          if(!v){
-            const patch = {starter:null};
-            // if user only had a starter-triggered snap, clear it too
-            const e = ptEdit(p);
-            if(e.snap!=null && (e.snap===p.snap || e.snap===PT_SNAP_DEFAULT[p.pos])) patch.snap = null;
-            ptSetEdit(p, patch);
-            renderPT();
-            return;
-          }
-          ptSetEdit(p, {starter:v});
-        } else if(fld==='notes'){
-          v = el.value.trim() || null;
-          ptSetEdit(p, {notes:v});
-        } else {
-          v = el.value === '' ? null : +el.value;
-          if(v!=null && isNaN(v)) return;
-          ptSetEdit(p, {[fld]: v});
-        }
-        renderPT();
-      };
-      el.onchange = handler;
-      if(el.type==='text' || el.type==='number') el.onblur = handler;
-    });
-  });
-}
-
-// filter chips
-document.querySelectorAll('#ptposfilter .chip').forEach(c=>{
-  c.onclick=()=>{
-    document.querySelectorAll('#ptposfilter .chip').forEach(x=>x.classList.remove('on'));
-    c.classList.add('on'); ptPos = c.dataset.pos; renderPT();
-  };
-});
-const _pts = document.getElementById('ptsearch');
-if(_pts) _pts.oninput = e=>{ ptQ = e.target.value.toLowerCase(); renderPT(); };
-const _ptSO = document.getElementById('ptstartersonly');
-if(_ptSO) _ptSO.onclick = ()=>{
-  ptStartersOnly = !ptStartersOnly;
-  _ptSO.classList.toggle('on', ptStartersOnly);
-  renderPT();
-};
-document.querySelectorAll('#pttable thead th[data-k]').forEach(th=>{
-  th.onclick = ()=>{
-    const k = th.dataset.k;
-    if(k===ptSort.k) ptSort.dir *= -1;
-    else ptSort = {k, dir:(k==='name'||k==='team'||k==='opp')?1:-1};
-    document.querySelectorAll('#pttable thead th .arr').forEach(a=>a.remove());
-    th.insertAdjacentHTML('beforeend', `<span class="arr">${ptSort.dir<0?'▼':'▲'}</span>`);
-    renderPT();
-  };
-});
-
-// Export: CSV that pastes back into the workbook's DKManual column and friends
-const _ptExp = document.getElementById('ptexport');
-if(_ptExp) _ptExp.onclick = ()=>{
-  const rows = PT.filter(p=>ptEdit(p).starter || ptEdit(p).manual!=null
-                          || ptEdit(p).snap!=null || ptEdit(p).myproj!=null
-                          || ptEdit(p).notes);
-  const cols = ['Name','Team','Pos','Starter','Snap%_Override','DKManual','My_Proj_Override','Notes'];
-  const esc = v => { if(v==null) return ''; const s=String(v);
-    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
-  const lines = [cols.join(',')];
-  rows.forEach(p=>{
-    const e = ptEdit(p);
-    lines.push([p.name, p.team, p.pos,
-                e.starter?'Y':'',
-                e.snap==null?'':e.snap,
-                e.manual==null?'':e.manual,
-                e.myproj==null?'':e.myproj,
-                e.notes||''].map(esc).join(','));
-  });
-  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
-  const today = new Date().toISOString().slice(0,10);
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `projection-edits-${SLATE_ID||'main'}-${today}.csv`;
-  document.body.appendChild(a); a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 100);
-};
-const _ptRst = document.getElementById('ptreset');
-if(_ptRst) _ptRst.onclick = ()=>{
-  if(confirm('Discard every edit for this slate? (This cannot be undone.)')){
-    PT_EDITS = {};
-    ptSaveEdits();
-    renderPT();
-  }
-};
 
 /* ---------------- Matchup Chart (player vs defense) ---------------- */
 let mcPos='QB', mcQ='', mcSort={k:'mscore', dir:-1}, mcStarters=true;

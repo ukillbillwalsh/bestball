@@ -1,7 +1,16 @@
 {
- "as_of": "2026-07-21T16:56:43",
+ "as_of": "2026-07-22T04:19:53",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Quincy Porter",
+   "pos": "",
+   "team": "Notre Dame",
+   "injury": "Kneecap",
+   "date": "July 21, 2026",
+   "headline": "Might not be ready to open fall camp",
+   "in_pool": true
+  },
   {
    "player": "Will Hammond",
    "pos": "",
