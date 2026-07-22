@@ -359,7 +359,7 @@
   .gtotal small{font-family:var(--mono);font-size:9px;color:var(--dim);display:block;letter-spacing:1px;font-weight:400;margin-top:2px}
   .teams{display:flex;flex-direction:column;gap:9px;position:relative}
   .trow{display:flex;align-items:center;gap:10px}
-  .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;width:54px;letter-spacing:.5px}
+  .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
   .tbar-fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:var(--mono);font-size:12px;font-weight:600;color:#0a0e16}
   .tspread{font-family:var(--mono);font-size:12px;color:var(--muted);width:48px;text-align:right}
@@ -511,6 +511,23 @@
       <div class="refresh">Spreads &amp; totals: <b>live odds feed</b> · implied team totals derived from spread + total</div>
     </div>
     <div class="gamegrid" id="gamegrid"></div>
+
+    <div style="margin-top:26px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
+        <h2 style="font-family:var(--disp);font-size:19px;margin:0">Leverage Stacks</h2>
+        <span style="color:var(--dim);font-family:var(--mono);font-size:11px">high-volume QBs · high-usage pass catchers · field leverage</span>
+      </div>
+      <div class="tablewrap">
+        <table id="stacktable">
+          <thead><tr>
+            <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
+            <th>Comb pOwn</th><th>Lev</th><th>Type</th>
+          </tr></thead>
+          <tbody id="stackbody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">Chalk = the QB with his highest-usage receiver (a second receiver joins when his usage runs close to the top guy's). Leverage = the same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Lev = combined projection per point of combined ownership; sorted so the best leverage floats to the top. QBs qualify by team pass rate when lines and team data exist.</p>
+    </div>
     <p class="footnote">Each team shows its pass/run lean (blue = pass rate, green = rush rate) so you can instantly see whether a game environment feeds WRs or RBs. The "2-QB viable" flag fires on high-total, tight-spread games — where a second QB in the SUPER FLEX pays off. Pace shown as estimated plays per team.</p>
   </section>
 
@@ -819,6 +836,65 @@ document.querySelectorAll('#posfilter .chip').forEach(c=>{
 document.getElementById('psearch').oninput=e=>{q=e.target.value.toLowerCase();renderProj();};
 
 /* ---------------- matchups grid ---------------- */
+function renderStacks(){
+  const body=document.getElementById('stackbody');
+  if(!body) return;
+  if(!GAMES.length||!pool.length){
+    body.innerHTML=`<tr><td colspan="6" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">Stacks appear when the slate has games.</td></tr>`;
+    return;
+  }
+  const stacks=[];
+  const teamsInGames=new Set();
+  GAMES.forEach(g=>{teamsInGames.add(g.away);teamsInGames.add(g.home);});
+  teamsInGames.forEach(team=>{
+    // pass-volume gate only when team data exists
+    const tr=TEAMS[team];
+    if(tr&&tr.passRate!=null&&tr.passRate<45) return;
+    const qbs=pool.filter(p=>p.team===team&&p.pos==='QB'&&p.proj>0)
+      .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
+    if(!qbs.length) return;
+    const qb=qbs[0];
+    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0)
+      .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
+    if(!wrs.length) return;
+    const g=GAMES.find(x=>x.away===team||x.home===team);
+    const gm=g?`${g.away} @ ${g.home}`:'';
+    const mk=(catchers,type)=>{
+      const proj=+(qb.proj+catchers.reduce((s,w)=>s+w.proj,0)).toFixed(1);
+      const own=+(qb.own+catchers.reduce((s,w)=>s+w.own,0)).toFixed(1);
+      stacks.push({gm,qb,catchers,proj,own,type,
+        lev:+(proj/Math.max(2,own)).toFixed(2)});
+    };
+    // chalk: top-usage WR, plus a 2nd when his usage runs close
+    const chalk=[wrs[0]];
+    if(wrs[1]&&wrs[1].usage>=wrs[0].usage*0.75) chalk.push(wrs[1]);
+    mk(chalk,'CHALK');
+    // leverage: lowest-owned among the top-4 usage WRs with real usage,
+    // meaningfully lower-owned than the chalk guy
+    const cands=wrs.slice(1,4).filter(w=>w.usage>=wrs[0].usage*0.4);
+    if(cands.length){
+      const piv=cands.sort((a,b)=>a.own-b.own)[0];
+      if(piv.own<wrs[0].own-0.5||wrs[0].own===0) mk([piv],'LEVERAGE');
+    }
+  });
+  stacks.sort((a,b)=>b.lev-a.lev||b.proj-a.proj);
+  const top=stacks.slice(0,12);
+  if(!top.length){
+    body.innerHTML=`<tr><td colspan="6" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No qualifying stacks yet — needs QBs and receivers with usage on the slate.</td></tr>`;
+    return;
+  }
+  body.innerHTML=top.map(s=>`
+    <tr>
+      <td class="l" style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.gm}</td>
+      <td class="l"><div class="pname">${logoImg(s.qb.team)}<b>${s.qb.name}</b>
+        <span style="color:var(--dim)">+</span> ${s.catchers.map(w=>w.name).join(' <span style="color:var(--dim)">+</span> ')}</div></td>
+      <td class="num" style="font-weight:700;color:var(--accent2)">${s.proj}</td>
+      <td class="num" style="color:var(--muted)">${s.own>0?s.own+'%':'—'}</td>
+      <td class="num" style="font-weight:700">${s.own>0?s.lev:'—'}</td>
+      <td class="num"><span class="mc-chip ${s.type==='LEVERAGE'?'mc-elite':'mc-even'}">${s.type}</span></td>
+    </tr>`).join('');
+}
+
 function renderGames(){
   const grid=document.getElementById('gamegrid');
   if(!GAMES.length){
@@ -839,7 +915,7 @@ function renderGames(){
           ${hasTT?`<div class="tbar-track"><div class="tbar-fill" style="width:${(t/maxTot*100)}%;background:${isFav?'linear-gradient(90deg,var(--accent),var(--accent2))':'linear-gradient(90deg,#3d5a8c,#5478b0)'}">${t}</div></div>`:`<div class="tbar-track" style="opacity:.25"></div>`}
           <div class="tspread">${hasLines?(isFav?g.spread:('+'+Math.abs(g.spread))):'—'}</div>
         </div>
-        ${pass!=null?`<div class="leanwrap" style="padding-left:64px">
+        ${pass!=null?`<div class="leanwrap" style="padding-left:86px">
           <div class="leanbar" title="Pass ${pass}% · Rush ${100-pass}%"><span class="lp" style="width:${pass}%"></span><span class="lr" style="width:${100-pass}%"></span></div>
           <span class="leantxt">${leanTag(pass)} · P${pass}/R${100-pass}</span>
         </div>`:''}
@@ -1105,7 +1181,7 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderLev();renderMChart();
+  renderProj();renderGames();renderStacks();renderLev();renderMChart();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
