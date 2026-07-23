@@ -367,6 +367,9 @@
   .gx-proe{font-style:normal;font-size:10px}
   .gx-tag{font-style:normal;font-size:9px;letter-spacing:.5px;color:var(--dim);border:1px solid var(--dim);border-radius:4px;padding:0 4px;margin-left:3px}
   .gx-na{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .gx-edge{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;margin-left:auto}
+  .gx-pass{border-top:1px dashed rgba(129,149,179,.15);margin-top:4px;padding-top:6px}
+  .gx-team{min-width:0}
   .stkplus{color:var(--muted);margin:0 7px;font-weight:400;opacity:.9}
   .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
@@ -914,17 +917,40 @@ function toggleGx(i){
   const el=document.getElementById('gx-'+i);
   if(el) el.style.display=el.style.display==='none'?'block':'none';
 }
-function gxRow(ab){
-  const t=TEAMSTATS[ab];
-  if(!t) return `<div class="gx-row"><span class="gx-team">${logoImg(ab)}${ab}</span><span class="gx-na">advanced stats pending</span></div>`;
-  const conc=t.hhi==null?null:(t.hhi<=0.22?'SPREAD':t.hhi>=0.32?'CONCENTRATED':'BALANCED');
-  return `<div class="gx-row">
-    <span class="gx-team">${logoImg(ab)}${ab}</span>
-    <span class="gx-stat" title="SP+ offensive national rank">O <b>${t.spOffRank!=null?'#'+t.spOffRank:'—'}</b></span>
-    <span class="gx-stat" title="SP+ defensive national rank">D <b>${t.spDefRank!=null?'#'+t.spDefRank:'—'}</b></span>
-    <span class="gx-stat" title="pass-play share, and vs the FBS median (pass rate over expected)">Pass <b>${t.passRate!=null?t.passRate+'%':'—'}</b>${t.proe!=null?` <i class="gx-proe" style="color:${t.proe>0?'#41d67c':'var(--muted)'}">${t.proe>0?'+':''}${t.proe}</i>`:''}</span>
-    <span class="gx-stat" title="target concentration (HHI of receiving-yard shares): low = ball spread around, high = one main guy">Conc <b>${t.hhi!=null?t.hhi.toFixed(2):'—'}</b>${conc?` <i class="gx-tag">${conc}</i>`:''}</span>
-  </div>`;
+function gxMatchup(away,home){
+  const a=TEAMSTATS[away], h=TEAMSTATS[home];
+  if(!a&&!h) return `<div class="gx-row"><span class="gx-na">advanced stats pending</span></div>`;
+  // one line per offense: that unit's SP+ rank vs the defense it faces,
+  // with the edge going to whichever unit is ranked better
+  const line=(offAb,off,defAb,def)=>{
+    const o=off&&off.spOffRank, d=def&&def.spDefRank;
+    if(o==null||d==null) return `<div class="gx-row">
+      <span class="gx-team">${logoImg(offAb)}${offAb} O</span>
+      <span class="gx-stat">vs</span>
+      <span class="gx-team">${logoImg(defAb)}${defAb} D</span>
+      <span class="gx-na">SP+ pending</span></div>`;
+    const edge=d-o;                       // + = offense better ranked
+    const winner=edge>0?offAb:defAb;
+    const tag=edge===0?`<i class="gx-tag">EVEN</i>`
+      :`<i class="gx-edge" style="color:${edge>0?'#41d67c':'#ff6b5e'}">▲ ${winner} +${Math.abs(edge)}</i>`;
+    return `<div class="gx-row">
+      <span class="gx-team">${logoImg(offAb)}${offAb} O</span>
+      <span class="gx-stat"><b>#${o}</b></span>
+      <span class="gx-stat">vs</span>
+      <span class="gx-team">${logoImg(defAb)}${defAb} D</span>
+      <span class="gx-stat"><b>#${d}</b></span>
+      ${tag}
+    </div>`;
+  };
+  const pass=t=>t&&t.passRate!=null
+    ?`${t.passRate}%${t.proe!=null?` (${t.proe>0?'+':''}${t.proe})`:''}`:null;
+  const pa=pass(a), ph=pass(h);
+  const passLine=(pa||ph)?`<div class="gx-row gx-pass" title="pass-play share, and vs the FBS median (pass rate over expected)">
+      <span class="gx-stat">Pass lean:</span>
+      ${pa?`<span class="gx-stat">${away} <b>${pa}</b></span>`:''}
+      ${ph?`<span class="gx-stat">${home} <b>${ph}</b></span>`:''}
+    </div>`:'';
+  return line(away,a,home,h)+line(home,h,away,a)+passLine;
 }
 function renderGames(){
   const grid=document.getElementById('gamegrid');
@@ -966,8 +992,7 @@ function renderGames(){
         ${hasLines?(qb2?'<span class="gtag qb2">2-QB VIABLE</span>':'<span class="gtag">1-QB GAME</span>'):''}
       </div>
       <div class="gx" id="gx-${gi}" style="display:none">
-        ${gxRow(g.away)}
-        ${gxRow(g.home)}
+        ${gxMatchup(g.away,g.home)}
       </div>
     </div>`;
   }).join('');
