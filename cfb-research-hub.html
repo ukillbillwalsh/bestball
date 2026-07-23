@@ -408,9 +408,8 @@
     box-shadow:0 1px 1px rgba(0,0,0,.4)}
   .jname{font-family:var(--mono);font-weight:800;font-size:7px;letter-spacing:.5px;
     color:#141922;text-transform:uppercase;white-space:nowrap;overflow:hidden;max-width:100%}
-  .jnum{position:absolute;left:0;right:0;top:22px;text-align:center;
-    font-family:var(--disp);font-weight:800;font-size:20px;line-height:1;color:#f5f6f8;
-    letter-spacing:1px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .jnum{position:absolute;left:0;right:0;top:24px;text-align:center;
+    font-size:17px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
   .stkplus{color:var(--muted);margin:0 7px;font-weight:400;opacity:.9}
   .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
@@ -1037,10 +1036,9 @@ function renderDepth(){
       const c=card(p);
       const nameplate=p.name.split(' ').slice(-1)[0];
       html+=`<div class="fp" style="left:${s[0]}%;top:${s[1]}%" title="${p.name} — proj ${p.proj} — ${c.tip}">
-        <div class="fptemp">${c.emoji}</div>
         <div class="jersey"><span class="jcollar"></span>
           <span class="jplate"><span class="jname">${nameplate}</span></span>
-          <span class="jnum">${Math.round(p.proj)}</span></div>
+          <span class="jnum">${c.emoji}</span></div>
         <div class="fpp">${pos}${i>0?i+1:''} · ${p.usage}%</div>
       </div>`;
     });
