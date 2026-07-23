@@ -359,6 +359,7 @@
   .gtotal small{font-family:var(--mono);font-size:9px;color:var(--dim);display:block;letter-spacing:1px;font-weight:400;margin-top:2px}
   .teams{display:flex;flex-direction:column;gap:9px;position:relative}
   .trow{display:flex;align-items:center;gap:10px}
+  .stkplus{color:var(--muted);margin:0 7px;font-weight:400;opacity:.9}
   .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
   .tbar-fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:var(--mono);font-size:12px;font-weight:600;color:#0a0e16}
@@ -444,7 +445,7 @@
     <button data-view="match">Matchups<span class="tg">vegas · totals · pace</span></button>
     <button data-view="mchart">Matchup Chart<span class="tg">player vs defense</span></button>
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
-    <button data-view="lev">Ownership<span class="tg">field % · leverage</span></button>
+    <button data-view="lev">Stacks<span class="tg">chalk · leverage</span></button>
     <button data-view="qbstats">QB Stats<span class="tg">pff · usage · matchup</span></button>
     <button data-view="rbstats">RB Stats<span class="tg">carries · grade · matchup</span></button>
     <button data-view="wrstats">WR Stats<span class="tg">targets · yprr · matchup</span></button>
@@ -512,22 +513,7 @@
     </div>
     <div class="gamegrid" id="gamegrid"></div>
 
-    <div style="margin-top:26px">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
-        <h2 style="font-family:var(--disp);font-size:19px;margin:0">Leverage Stacks</h2>
-        <span style="color:var(--dim);font-family:var(--mono);font-size:11px">high-volume QBs · high-usage pass catchers · field leverage</span>
-      </div>
-      <div class="tablewrap">
-        <table id="stacktable">
-          <thead><tr>
-            <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
-            <th>Comb pOwn</th><th>Lev</th><th>Type</th>
-          </tr></thead>
-          <tbody id="stackbody"></tbody>
-        </table>
-      </div>
-      <p class="footnote">Chalk = the QB with his highest-usage receiver (a second receiver joins when his usage runs close to the top guy's). Leverage = the same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Lev = combined projection per point of combined ownership; sorted so the best leverage floats to the top. QBs qualify by team pass rate when lines and team data exist, and only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
-    </div>
+    
     <p class="footnote">Each team shows its pass/run lean (blue = pass rate, green = rush rate) so you can instantly see whether a game environment feeds WRs or RBs. The "2-QB viable" flag fires on high-total, tight-spread games — where a second QB in the SUPER FLEX pays off. Pace shown as estimated plays per team.</p>
   </section>
 
@@ -614,33 +600,35 @@
 
   <!-- OWNERSHIP / LEVERAGE -->
   <section class="view" id="view-lev">
-    <div class="toolbar">
-      <div class="filters" id="levfilter">
-        <button class="chip on" data-pos="ALL">All</button>
-        <button class="chip" data-pos="QB">QB</button>
-        <button class="chip" data-pos="RB">RB</button>
-        <button class="chip" data-pos="WR">WR</button>
-      </div>
-      <div class="spacer" style="flex:1"></div>
-      <div class="refresh">Sorted by <b>leverage</b> — high projection, low field</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
+      <h2 style="font-family:var(--disp);font-size:19px;margin:0">Leverage Stacks</h2>
+      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">high-volume QBs · lower-owned pass catchers · field leverage</span>
     </div>
     <div class="tablewrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="l">Player</th>
-            <th>Pos</th>
-            <th>Salary</th>
-            <th>Proj</th>
-            <th>pOwn%</th>
-            <th class="num">Field Bar</th>
-            <th>Leverage</th>
-          </tr>
-        </thead>
-        <tbody id="levbody"></tbody>
+      <table id="stacktable">
+        <thead><tr>
+          <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
+          <th>Comb pOwn</th><th>Lev</th>
+        </tr></thead>
+        <tbody id="stackbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Leverage view surfaces tournament pivots: players you project well above where the field will roster them. Negative leverage = chalk you may want to fade or build around deliberately.</p>
+    <p class="footnote">The same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Lev = combined projection per point of combined ownership; sorted best-first. Only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
+
+    <div style="display:flex;align-items:baseline;gap:12px;margin:26px 0 10px">
+      <h2 style="font-family:var(--disp);font-size:19px;margin:0">Regular Stacks</h2>
+      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">every team's chalk build · QB + top target(s)</span>
+    </div>
+    <div class="tablewrap">
+      <table id="rstacktable">
+        <thead><tr>
+          <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
+          <th>Comb pOwn</th><th>Lev</th>
+        </tr></thead>
+        <tbody id="rstackbody"></tbody>
+      </table>
+    </div>
+    <p class="footnote">Each slate team's straightforward build: the QB with his highest-usage receiver (a second joins when his usage runs close to the top guy's). Sorted by combined projection. QBs qualify by team pass rate when lines and team data exist.</p>
   </section>
 
   <!-- QB / RB / WR STATS -->
@@ -840,7 +828,10 @@ function renderStacks(){
   const body=document.getElementById('stackbody');
   if(!body) return;
   if(!GAMES.length||!pool.length){
-    body.innerHTML=`<tr><td colspan="6" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">Stacks appear when the slate has games.</td></tr>`;
+    const e=`<tr><td colspan="5" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">Stacks appear when the slate has games.</td></tr>`;
+    body.innerHTML=e;
+    const rb=document.getElementById('rstackbody');
+    if(rb) rb.innerHTML=e;
     return;
   }
   const stacks=[];
@@ -879,22 +870,23 @@ function renderStacks(){
       if(piv.own<wrs[0].own-0.5||wrs[0].own===0) mk([piv],'LEVERAGE');
     }
   });
-  stacks.sort((a,b)=>b.lev-a.lev||b.proj-a.proj);
-  const top=stacks.slice(0,12);
-  if(!top.length){
-    body.innerHTML=`<tr><td colspan="6" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No qualifying stacks yet — needs QBs and receivers with usage on the slate.</td></tr>`;
-    return;
-  }
-  body.innerHTML=top.map(s=>`
+  const rowHTML=s=>`
     <tr>
       <td class="l" style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.gm}</td>
       <td class="l"><div class="pname">${logoImg(s.qb.team)}<b>${s.qb.name}</b>
-        <span style="color:var(--dim)">+</span> ${s.catchers.map(w=>w.name).join(' <span style="color:var(--dim)">+</span> ')}</div></td>
+        <span class="stkplus">+</span> ${s.catchers.map(w=>w.name).join(' <span class="stkplus">+</span> ')}</div></td>
       <td class="num" style="font-weight:700;color:var(--accent2)">${s.proj}</td>
       <td class="num" style="color:var(--muted)">${s.own>0?s.own+'%':'—'}</td>
       <td class="num" style="font-weight:700">${s.own>0?s.lev:'—'}</td>
-      <td class="num"><span class="mc-chip ${s.type==='LEVERAGE'?'mc-elite':'mc-even'}">${s.type}</span></td>
-    </tr>`).join('');
+    </tr>`;
+  const empty=msg=>`<tr><td colspan="5" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">${msg}</td></tr>`;
+  const levs=stacks.filter(s=>s.type==='LEVERAGE').sort((a,b)=>b.lev-a.lev||b.proj-a.proj).slice(0,12);
+  body.innerHTML=levs.length?levs.map(rowHTML).join(''):empty('Leverage pivots appear once ownership projections separate the field.');
+  const rbody=document.getElementById('rstackbody');
+  if(rbody){
+    const regs=stacks.filter(s=>s.type==='CHALK').sort((a,b)=>b.proj-a.proj).slice(0,24);
+    rbody.innerHTML=regs.length?regs.map(rowHTML).join(''):empty('Stacks appear when the slate has QBs and receivers with usage.');
+  }
 }
 
 function renderGames(){
@@ -1183,7 +1175,7 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderStacks();renderLev();renderMChart();
+  renderProj();renderGames();renderStacks();renderMChart();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
