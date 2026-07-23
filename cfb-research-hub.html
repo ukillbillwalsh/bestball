@@ -359,6 +359,14 @@
   .gtotal small{font-family:var(--mono);font-size:9px;color:var(--dim);display:block;letter-spacing:1px;font-weight:400;margin-top:2px}
   .teams{display:flex;flex-direction:column;gap:9px;position:relative}
   .trow{display:flex;align-items:center;gap:10px}
+  .gx{margin-top:10px;padding-top:9px;border-top:1px solid rgba(129,149,179,.18)}
+  .gx-row{display:flex;align-items:center;gap:12px;padding:3px 0;font-size:11.5px;flex-wrap:wrap}
+  .gx-team{font-family:var(--disp);font-weight:700;min-width:72px;display:flex;align-items:center;gap:5px}
+  .gx-stat{font-family:var(--mono);color:var(--muted)}
+  .gx-stat b{color:#e8edf7;font-weight:700}
+  .gx-proe{font-style:normal;font-size:10px}
+  .gx-tag{font-style:normal;font-size:9px;letter-spacing:.5px;color:var(--dim);border:1px solid var(--dim);border-radius:4px;padding:0 4px;margin-left:3px}
+  .gx-na{font-family:var(--mono);font-size:11px;color:var(--dim)}
   .stkplus{color:var(--muted);margin:0 7px;font-weight:400;opacity:.9}
   .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
@@ -702,6 +710,7 @@ let GAMES = [];
 let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
+let TEAMSTATS = {};    // team -> SP+/pass-lean/target-concentration from teamstats.json
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
 let DVP = {};          // {QB:{abbr:{rank,ptsG,cmpPct/catchPct}},...} defense-vs-position
 let LINES = {};        // {abbr:{ol,dl}} line yards: OL created / DL conceded per rush
@@ -901,13 +910,29 @@ function renderStacks(){
   }
 }
 
+function toggleGx(i){
+  const el=document.getElementById('gx-'+i);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+function gxRow(ab){
+  const t=TEAMSTATS[ab];
+  if(!t) return `<div class="gx-row"><span class="gx-team">${logoImg(ab)}${ab}</span><span class="gx-na">advanced stats pending</span></div>`;
+  const conc=t.hhi==null?null:(t.hhi<=0.22?'SPREAD':t.hhi>=0.32?'CONCENTRATED':'BALANCED');
+  return `<div class="gx-row">
+    <span class="gx-team">${logoImg(ab)}${ab}</span>
+    <span class="gx-stat" title="SP+ offensive national rank">O <b>${t.spOffRank!=null?'#'+t.spOffRank:'—'}</b></span>
+    <span class="gx-stat" title="SP+ defensive national rank">D <b>${t.spDefRank!=null?'#'+t.spDefRank:'—'}</b></span>
+    <span class="gx-stat" title="pass-play share, and vs the FBS median (pass rate over expected)">Pass <b>${t.passRate!=null?t.passRate+'%':'—'}</b>${t.proe!=null?` <i class="gx-proe" style="color:${t.proe>0?'#41d67c':'var(--muted)'}">${t.proe>0?'+':''}${t.proe}</i>`:''}</span>
+    <span class="gx-stat" title="target concentration (HHI of receiving-yard shares): low = ball spread around, high = one main guy">Conc <b>${t.hhi!=null?t.hhi.toFixed(2):'—'}</b>${conc?` <i class="gx-tag">${conc}</i>`:''}</span>
+  </div>`;
+}
 function renderGames(){
   const grid=document.getElementById('gamegrid');
   if(!GAMES.length){
     grid.innerHTML=`<div style="grid-column:1/-1;padding:52px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">No games on the slate yet.</div>`;
     return;
   }
-  grid.innerHTML=GAMES.map(g=>{
+  grid.innerHTML=GAMES.map((g,gi)=>{
     const hasLines=g.total!=null&&g.spread!=null;
     const shoot=hasLines&&g.total>=58&&Math.abs(g.spread)<=7;
     const qb2=hasLines&&g.total>=57&&Math.abs(g.spread)<=6;
@@ -926,7 +951,7 @@ function renderGames(){
           <span class="leantxt">${leanTag(pass)} · P${pass}/R${100-pass}</span>
         </div>`:''}
       </div>`;
-    return `<div class="game ${shoot?'shootout':''}">
+    return `<div class="game ${shoot?'shootout':''}" onclick="toggleGx(${gi})" style="cursor:pointer" title="click for advanced stats">
       <div class="ghead">
         <div><div class="gtime">${g.time||''}</div><div style="font-family:var(--disp);font-weight:600;font-size:17px;margin-top:3px">${g.away} @ ${g.home}</div></div>
         <div style="text-align:right"><div class="gtotal">${g.total!=null?g.total:'—'}<small>O/U TOTAL</small></div></div>
@@ -939,6 +964,10 @@ function renderGames(){
         ${g.pace!=null?`<span class="gtag pace">≈${g.pace} plays/tm</span>`:`<span class="gtag">LINES PENDING</span>`}
         ${shoot?'<span class="gtag" style="color:var(--accent);border-color:rgba(255,90,31,.35)">SHOOTOUT</span>':''}
         ${hasLines?(qb2?'<span class="gtag qb2">2-QB VIABLE</span>':'<span class="gtag">1-QB GAME</span>'):''}
+      </div>
+      <div class="gx" id="gx-${gi}" style="display:none">
+        ${gxRow(g.away)}
+        ${gxRow(g.home)}
       </div>
     </div>`;
   }).join('');
@@ -1473,6 +1502,7 @@ async function loadData(){
 
   try{ proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json(); }
   catch(e){ console.warn('projections not found — using bundled sample',e); }
+  try{ TEAMSTATS = (await (await fetch(DATA_BASE+'teamstats.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ TEAMSTATS = {}; }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
   try{ pr = await (await fetch(DATA_BASE+'props.json',{cache:'no-store'})).json(); }
