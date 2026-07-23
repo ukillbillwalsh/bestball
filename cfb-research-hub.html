@@ -372,9 +372,16 @@
   .gx-team{min-width:0}
   .fieldwrap{display:flex;justify-content:center}
   .field{position:relative;width:min(680px,100%);height:520px;border-radius:14px;overflow:hidden;
-    background:linear-gradient(180deg,#123c22,#0d3019),
-    repeating-linear-gradient(180deg,transparent 0 51px,rgba(255,255,255,.14) 51px 53px);
+    background-color:#0f351d;
+    background-image:linear-gradient(180deg,rgba(255,255,255,.14) 1px,transparent 1px),
+      linear-gradient(180deg,#123c22,#0d3019);
+    background-size:100% 10%,100% 100%;
     border:2px solid rgba(255,255,255,.18)}
+  .yard{position:absolute;left:10px;right:10px;display:flex;justify-content:space-between;
+    transform:translateY(-55%);font-family:var(--mono);font-size:11px;font-weight:700;
+    letter-spacing:1px;color:rgba(255,255,255,.38);pointer-events:none}
+  .fifty{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;
+    background:rgba(255,255,255,.4);pointer-events:none}
   .fp{position:absolute;transform:translate(-50%,-50%);text-align:center;min-width:88px;cursor:default}
   .fp .fpcard{background:rgba(10,16,28,.82);border:1px solid rgba(255,255,255,.22);border-radius:9px;padding:5px 8px 4px;backdrop-filter:blur(2px)}
   .fp .fpn{font-family:var(--disp);font-weight:700;font-size:12.5px;color:#fff;white-space:nowrap}
@@ -988,14 +995,18 @@ function renderDepth(){
     return list.slice(0,n);
   };
   const qbs=pick('QB',1), rbs=pick('RB',2), wrs=pick('WR',4);
-  const spots={QB:[[50,66]],RB:[[50,82],[63,82]],WR:[[10,50],[27,55],[73,55],[90,50]]};
+  const spots={QB:[[50,62]],RB:[[50,76],[63,76]],WR:[[10,47],[27,52],[73,52],[90,47]]};
   const card=p=>{
     const a=l5avg(p);
     const hot=a!=null&&a>=(L5_HOT[p.pos]||15), cold=a!=null&&a<L5_COLD;
     const tip=p.l5&&p.l5.length?`L5 DK: ${p.l5.join(' · ')} (avg ${a})`:'no recent game data';
     return {emoji:hot?'🔥':cold?'🧊':'',tip};
   };
-  let html='';
+  // yard numbers each side, 10s up to the 50 at midfield and back down
+  let html='<div class="fifty"></div>';
+  [[10,10],[20,20],[30,30],[40,40],[50,50],[60,40],[70,30],[80,20],[90,10]].forEach(([top,yd])=>{
+    html+=`<div class="yard" style="top:${top}%"><span>${yd}</span><span>${yd}</span></div>`;
+  });
   [['QB',qbs],['RB',rbs],['WR',wrs]].forEach(([pos,list])=>{
     list.forEach((p,i)=>{
       const s=spots[pos][i]; if(!s) return;
