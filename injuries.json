@@ -1,5 +1,5 @@
 {
- "as_of": "2026-07-22T15:27:41",
+ "as_of": "2026-07-24T05:30:15",
  "source": "RotoWire",
  "items": [
   {
@@ -81,15 +81,6 @@
    "injury": "Achilles",
    "date": "July 16, 2026",
    "headline": "Expected to miss season",
-   "in_pool": true
-  },
-  {
-   "player": "Quinten Joyner",
-   "pos": "",
-   "team": "Texas Tech",
-   "injury": "Knee",
-   "date": "July 8, 2026",
-   "headline": "Probable for Week 1",
    "in_pool": true
   }
  ]

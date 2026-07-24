@@ -584,6 +584,26 @@ function teamLogo(team, sm){
 }
 
 let BESTBALL = {players:[], updated:"", count:0};
+
+// My Rank tracks MY PROJECTIONS: whenever enough players carry a myProj,
+// rank is recomputed from those numbers (highest proj = rank 1) so updated
+// projections always reorder the board.  Players without a projection keep
+// their CSV rank pushed BELOW every projected player; with too few
+// projections to rank meaningfully, the CSV ranks stand as-is.
+function deriveRanks(){
+  const ps = BESTBALL.players || [];
+  const withProj = ps.filter(p => typeof p.myProj === 'number' && p.myProj > 0);
+  if (withProj.length < 25) return;                 // not enough to rank on
+  const sorted = [...withProj].sort((a,b)=>
+    (b.myProj - a.myProj) || ((a.adp??9999) - (b.adp??9999)));
+  sorted.forEach((p,i)=>{ p.myRank = i + 1; });
+  const base = sorted.length;
+  ps.filter(p => !(typeof p.myProj === 'number' && p.myProj > 0)
+              && p.myRank != null)
+    .sort((a,b)=>a.myRank - b.myRank)
+    .forEach((p,i)=>{ p.myRank = base + i + 1; });
+  BESTBALL.ranksFromProj = true;
+}
 let draftState = loadState();
 let sortKey = 'adp', sortDir = 1;
 
@@ -1868,6 +1888,7 @@ async function renderInjuryTicker(){
 (async()=>{
   try{
     BESTBALL = await (await fetch(DATA_URL, {cache:'no-store'})).json();
+    deriveRanks();
   }catch(e){
     BESTBALL = {players:[], count:0, updated:""};
     console.warn('Could not load', DATA_URL, e);
@@ -1903,7 +1924,8 @@ async function renderInjuryTicker(){
   const src = document.getElementById('srcInfo');
   const when = BESTBALL.updated ? new Date(BESTBALL.updated).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'unknown';
   const tags = [];
-  if (BESTBALL.myRankingsJoined) tags.push('my ranks joined');
+  if (BESTBALL.ranksFromProj) tags.push('ranks from my proj');
+  else if (BESTBALL.myRankingsJoined) tags.push('my ranks joined');
   if (byeKeys.length)            tags.push(`byes baked (${byeKeys.length})`);
   if (Object.keys(TEAM_LOGOS).length) tags.push(`logos (${Object.keys(TEAM_LOGOS).length})`);
   src.innerHTML = BESTBALL.count
