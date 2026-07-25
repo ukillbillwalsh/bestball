@@ -410,6 +410,10 @@
     color:#141922;text-transform:uppercase;white-space:nowrap;overflow:hidden;max-width:100%}
   .jnum{position:absolute;left:0;right:0;top:24px;text-align:center;
     font-size:17px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+  .schemedot{color:var(--muted);margin-left:6px;cursor:help;font-size:11px;opacity:.7}
+  .schemebadge{margin-left:7px;padding:1px 6px;border-radius:5px;font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.4px;cursor:help;white-space:nowrap}
+  .sb-smash{color:#41d67c;border:1px solid #41d67c55;background:#41d67c14}
+  .sb-tough{color:#ff6b5e;border:1px solid #ff6b5e55;background:#ff6b5e14}
   .stkplus{color:var(--muted);margin:0 7px;font-weight:400;opacity:.9}
   .tabbr{font-family:var(--disp);font-weight:700;font-size:18px;min-width:76px;flex-shrink:0;letter-spacing:.5px}
   .tbar-track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden;position:relative}
@@ -1393,6 +1397,43 @@ function mcOppOf(p){
   const g=GAMES.find(g=>g.away===p.team||g.home===p.team);
   return g ? (g.away===p.team?g.home:g.away) : null;
 }
+function schemeBadge(p){
+  if(p.pos!=='WR') return {cls:'', txt:''};
+  const rcv=SCHEME.receivers[schemeNorm(p.name)], def=p.mopp?SCHEME.defense[p.mopp]:null;
+  if(!rcv||!def||!rcv.beats||rcv.beats==='BALANCED'||!def.lean||def.lean==='MIXED') return {cls:'',txt:''};
+  return rcv.beats===def.lean
+    ? {cls:'sb-smash', txt:`${rcv.beats} ✓`}
+    : {cls:'sb-tough', txt:`${rcv.beats} ✗`};
+}
+function schemeCell(p){
+  const tip=(p.mscheme||(p.mparts&&p.mparts.length?p.mparts.join(' · '):'')).replace(/"/g,'&quot;');
+  const b=schemeBadge(p);
+  return `<div class="pname" title="${tip}">${logoImg(p.team)}${p.name}`
+    +(b.txt?`<span class="schemebadge ${b.cls}">${b.txt}</span>`:'')
+    +(!b.txt&&p.mscheme?'<span class="schemedot">ⓘ</span>':'')+`</div>`;
+}
+function schemeDetail(p){
+  // rich player-vs-defense hover for the Matchup Chart: pulls the PFF man/zone
+  // splits for this receiver and the opponent's coverage tendency + how they
+  // grade / how QBs rate against them in each shell.
+  const opp=mcOppOf(p);
+  const lines=[];
+  const rcv=p.pos==='WR'?SCHEME.receivers[schemeNorm(p.name)]:null;
+  const def=opp?SCHEME.defense[opp]:null;
+  if(rcv){
+    const my=rcv.manYprr!=null?rcv.manYprr.toFixed(2):'—';
+    const zy=rcv.zoneYprr!=null?rcv.zoneYprr.toFixed(2):'—';
+    lines.push(`${p.name} YPRR — vs man ${my} · vs zone ${zy}${rcv.beats&&rcv.beats!=='BALANCED'?`  (${rcv.beats}-beater)`:''}`);
+  }
+  if(def){
+    lines.push(`${opp} plays ${def.manPct}% man / ${def.zonePct}% zone  (${def.lean})`);
+    if(def.manGrade!=null||def.zoneGrade!=null)
+      lines.push(`${opp} cover grade — man ${def.manGrade??'—'} · zone ${def.zoneGrade??'—'}`);
+    if(def.manQbRtg!=null||def.zoneQbRtg!=null)
+      lines.push(`QB rating vs ${opp} — man ${def.manQbRtg??'—'} · zone ${def.zoneQbRtg??'—'}`);
+  }
+  return lines.join('\n');
+}
 function mcScore(p){
   const opp=mcOppOf(p);
   const tbl=DVP[p.pos];
@@ -1477,7 +1518,7 @@ function renderMChart(){
           mdCls='mono';
         }
       }
-      return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n, mparts:m.parts, mdetail, mdText, mdCls};
+      return {...p, mscore:m.score, mopp:m.opp, mrank:m.rank, mptsg:m.ptsG, mn:m.n, mparts:m.parts, mscheme:schemeDetail(p), mdetail, mdText, mdCls};
     });
   rows.sort((a,b)=>{
     let x=a[mcSort.k], y=b[mcSort.k];
@@ -1491,7 +1532,7 @@ function renderMChart(){
   }
   body.innerHTML=rows.map(p=>`
     <tr>
-      <td class="l"><div class="pname">${logoImg(p.team)}${p.name}</div></td>
+      <td class="l">${schemeCell(p)}</td>
       <td class="num" style="color:var(--muted)">${p.pos}</td>
       <td class="num" style="color:var(--muted)">${p.team}</td>
       <td class="num">${p.mopp?`<span style="display:inline-flex;align-items:center;gap:5px">${logoImg(p.mopp)}${p.mopp}</span>`:'—'}</td>
