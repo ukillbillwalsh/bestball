@@ -498,9 +498,7 @@
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
     <button data-view="lev">Stacks<span class="tg">chalk · leverage</span></button>
     <button data-view="depth">Depth Charts<span class="tg">starters on the field</span></button>
-    <button data-view="qbstats">QB Stats<span class="tg">pff · usage · matchup</span></button>
-    <button data-view="rbstats">RB Stats<span class="tg">carries · grade · matchup</span></button>
-    <button data-view="wrstats">WR Stats<span class="tg">targets · yprr · matchup</span></button>
+    <button data-view="stats">Player Stats<span class="tg">QB · RB · WR profiles</span></button>
     <button data-view="props">Props<span class="tg">underdog · lines</span></button>
   </nav>
 </header>
@@ -654,34 +652,34 @@
   <section class="view" id="view-lev">
     <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
       <h2 style="font-family:var(--disp);font-size:19px;margin:0">Stacks</h2>
-      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">the best builds on the slate · ranked, not one per team</span>
+      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">every team's chalk build · QB + top target(s)</span>
     </div>
     <div class="tablewrap">
       <table id="rstacktable">
         <thead><tr>
           <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
           <th>Comb Ceil</th><th>Comb Val</th><th>Salary · Cap%</th>
-          <th>Comb pOwn</th><th>Grade</th>
+          <th>Comb pOwn</th><th>Lev</th>
         </tr></thead>
         <tbody id="rstackbody"></tbody>
       </table>
     </div>
-    <p class="footnote">Every plausible build on the slate is scored and the best ones rank — a loaded team can place two or three, a thin one none. Grade = the modelled chance a stack lands in the top decile for its size, fit on 3,250 stacks across the 2024 and 2025 seasons (combined projection, QB salary, cap share, receiver depth; grouped CV AUC 0.707). QBs qualify by team pass rate when lines and team data exist.</p>
+    <p class="footnote">Each slate team's straightforward build: the QB with his highest-usage receiver (a second joins when his usage runs close to the top guy's). Sorted by combined projection. QBs qualify by team pass rate when lines and team data exist.</p>
   <div style="display:flex;align-items:baseline;gap:12px;margin:26px 0 10px">
       <h2 style="font-family:var(--disp);font-size:19px;margin:0">Leverage Stacks</h2>
-      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">the same ranking, filtered to what the field is under-rostering</span>
+      <span style="color:var(--dim);font-family:var(--mono);font-size:11px">high-volume QBs · lower-owned pass catchers · field leverage</span>
     </div>
     <div class="tablewrap">
       <table id="stacktable">
         <thead><tr>
           <th class="l">Game</th><th class="l">Stack</th><th>Comb Proj</th>
           <th>Comb Ceil</th><th>Comb Val</th><th>Salary · Cap%</th>
-          <th>Comb pOwn</th><th>Grade</th>
+          <th>Comb pOwn</th><th>Lev</th>
         </tr></thead>
         <tbody id="stackbody"></tbody>
       </table>
     </div>
-    <p class="footnote">The same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Comb Ceil sums each player's best real DK game from the CFBD career logs — what the stack has actually combined for at its peak. Comb Val = combined projection per $1k of combined salary; Salary · Cap% shows the stack's total cost and the share of the $50k cap it consumes. Same Grade ranking as above, narrowed to stacks projected below the slate's median ownership. Ownership is a filter here, not part of the score: across 2024-2025, once you know a stack's projection, higher ownership went with MORE production, not less — in the top projection quintile, heavily-owned stacks hit 19.7% of the time against 6.2% for lightly-owned ones. The field reads news the projections miss. So treat this table as differentiation you pay a little for, not as better stacks. Receivers at the $3,000 minimum are excluded everywhere; they cleared 50 only 5.4% of the time against a 9.7% baseline. Only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
+    <p class="footnote">The same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Comb Ceil sums each player's best real DK game from the CFBD career logs — what the stack has actually combined for at its peak. Comb Val = combined projection per $1k of combined salary; Salary · Cap% shows the stack's total cost and the share of the $50k cap it consumes. Lev = combined projection per point of combined ownership; sorted best-first. Only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
 
     </section>
 
@@ -692,32 +690,21 @@
   </section>
 
   <!-- QB / RB / WR STATS -->
-  <section class="view" id="view-qbstats">
+  <section class="view" id="view-stats">
     <div class="toolbar">
-      <input class="search statsearch" data-tbl="QB" placeholder="Search QB / team…"><button class="colstoggle" data-toggle="cols">All Cols</button>
+      <div class="filters" id="statpos">
+        <button class="chip on" data-pos="QB">QB</button>
+        <button class="chip" data-pos="RB">RB</button>
+        <button class="chip" data-pos="WR">WR</button>
+      </div>
+      <input class="search statsearch" data-tbl="QB" placeholder="Search player / team…"><button class="colstoggle" data-toggle="cols">All Cols</button>
       <div class="spacer" style="flex:1"></div>
-      <div class="refresh">Source: <b>CFB_statpage_Main.xlsx → QBNEW</b> · PFF-derived · top projected</div>
+      <div class="refresh" id="statsrc">Source: <b>QBNEW</b> · PFF-derived · top projected</div>
     </div>
     <div class="statwrap"><table class="stattable" id="stat-QB"></table></div>
-    <p class="footnote">Full QB stat profile straight from your workbook. Color scale runs red→green within each stat column (green = better). Sticky player column; scroll right for the full set. <b>D PassExp Alw</b> = opponent pass-explosiveness allowed, <b>QB USG</b> = usage rate, <b>DVP</b> = defense-vs-position rank.</p>
-  </section>
-  <section class="view" id="view-rbstats">
-    <div class="toolbar">
-      <input class="search statsearch" data-tbl="RB" placeholder="Search RB / team…"><button class="colstoggle" data-toggle="cols">All Cols</button>
-      <div class="spacer" style="flex:1"></div>
-      <div class="refresh">Source: <b>CFB_statpage_Main.xlsx → RBNEW</b> · PFF-derived · top projected</div>
-    </div>
-    <div class="statwrap"><table class="stattable" id="stat-RB"></table></div>
-    <p class="footnote">Full RB profile. <b>RUSH USG</b> &amp; <b>SNAP%</b> are your committee tells, <b>BRKAWY %</b> = breakaway-run rate, <b>YCO/ATT</b> = yards after contact per attempt, <b>OL/DL YDS</b> = O-line vs D-line yards, <b>D RUSH EXP</b> = opp rush-explosiveness allowed, <b>DVP</b> = matchup rank.</p>
-  </section>
-  <section class="view" id="view-wrstats">
-    <div class="toolbar">
-      <input class="search statsearch" data-tbl="WR" placeholder="Search WR / team…"><button class="colstoggle" data-toggle="cols">All Cols</button>
-      <div class="spacer" style="flex:1"></div>
-      <div class="refresh">Source: <b>CFB_statpage_Main.xlsx → WRNEW</b> · PFF-derived · top projected</div>
-    </div>
-    <div class="statwrap"><table class="stattable" id="stat-WR"></table></div>
-    <p class="footnote">Full WR profile. <b>TGT SHARE</b> &amp; <b>PASS USG</b> are the usage anchors, <b>YPRR</b> = yards per route run (the elite efficiency stat), <b>SLOT%</b> = slot rate, <b>PASS D XPLSV</b> = opp pass-explosiveness allowed, <b>DVP 25</b> = matchup rank.</p>
+    <div class="statwrap" style="display:none"><table class="stattable" id="stat-RB"></table></div>
+    <div class="statwrap" style="display:none"><table class="stattable" id="stat-WR"></table></div>
+    <p class="footnote" id="statfoot">Full QB stat profile straight from your workbook. Color scale runs red→green within each stat column (green = better). Sticky player column; scroll right for the full set. <b>D PassExp Alw</b> = opponent pass-explosiveness allowed, <b>QB USG</b> = usage rate, <b>DVP</b> = defense-vs-position rank.</p>
   </section>
 
   <!-- PROPS -->
@@ -806,6 +793,27 @@ document.querySelectorAll('#tabs button').forEach(b=>{
   };
 });
 
+/* ---------------- player-stats position switch ---------------- */
+let statPos='QB';
+const STAT_FOOT={
+  QB:'Full QB stat profile straight from your workbook. Color scale runs red→green within each stat column (green = better). Sticky player column; scroll right for the full set. <b>D PassExp Alw</b> = opponent pass-explosiveness allowed, <b>QB USG</b> = usage rate, <b>DVP</b> = defense-vs-position rank.',
+  RB:'Full RB profile. <b>RUSH USG</b> &amp; <b>SNAP%</b> are your committee tells, <b>BRKAWY %</b> = breakaway-run rate, <b>YCO/ATT</b> = yards after contact per attempt, <b>OL/DL YDS</b> = O-line vs D-line yards, <b>D RUSH EXP</b> = opp rush-explosiveness allowed, <b>DVP</b> = matchup rank.',
+  WR:'Full WR profile. <b>TGT SHARE</b> &amp; <b>PASS USG</b> are the usage anchors, <b>YPRR</b> = yards per route run (the elite efficiency stat), <b>SLOT%</b> = slot rate, <b>PASS D XPLSV</b> = opp pass-explosiveness allowed, <b>DVP 25</b> = matchup rank.'
+};
+function setStatPos(pos){
+  statPos=pos;
+  document.querySelectorAll('#statpos .chip').forEach(c=>c.classList.toggle('on',c.dataset.pos===pos));
+  ['QB','RB','WR'].forEach(t=>{
+    const tbl=document.getElementById('stat-'+t);
+    if(tbl) tbl.parentElement.style.display = t===pos?'':'none';
+  });
+  const src=document.getElementById('statsrc'); if(src) src.innerHTML='Source: <b>'+pos+'NEW</b> · PFF-derived · top projected';
+  const foot=document.getElementById('statfoot'); if(foot) foot.innerHTML=STAT_FOOT[pos];
+  const inp=document.querySelector('.statsearch'); if(inp) inp.dataset.tbl=pos;
+  renderStat(pos);
+}
+document.querySelectorAll('#statpos .chip').forEach(c=>{c.onclick=()=>setStatPos(c.dataset.pos);});
+
 /* ---------------- projections table ---------------- */
 let sortK='val', sortDir=-1, posF='ALL', q='';
 function valClass(v){return v>=2.4?'val-hi':v>=2.0?'val-mid':'val-lo'}
@@ -885,45 +893,6 @@ document.querySelectorAll('#posfilter .chip').forEach(c=>{
 document.getElementById('psearch').oninput=e=>{q=e.target.value.toLowerCase();renderProj();};
 
 /* ---------------- matchups grid ---------------- */
-/* Stack ranking — fitted on 3,250 stack candidates across 27 slates (2024-2025).
-   Target: does the stack land in the top decile for its own size (2-man 49.7+,
-   3-man 70.5+ DK pts). Grouped CV AUC 0.707 across held-out slates.
-
-   Ownership is deliberately NOT a term. Within a projection tier, higher-owned
-   stacks hit MORE often (top proj quintile: 19.7% at high own vs 6.2% at low own)
-   — the field prices in news the projection misses. Adding own to the model moved
-   AUC 0.7035 -> 0.7050, i.e. nothing. Leverage is therefore a payout-structure
-   choice, applied as a FILTER on the low-own table, not as a quality signal.
-
-   SIM HOOK: once build_sims.py ships sim.json, boom% (P(30+)) per player is a
-   strictly better input than a point projection. simBoom() picks it up
-   automatically and the model falls back to projections until then. */
-const STACK_MODEL={
-  mu:{proj:33.6814,qb_sal:7.3051,cap:25.6374,wr_rank:2.2},
-  sd:{proj:10.6855,qb_sal:1.3452,cap:6.3624,wr_rank:1.1664},
-  coef:{proj:0.9492,qb_sal:0.3344,cap:-0.6869,wr_rank:-0.2502},
-  b:-2.4155
-};
-const MIN_WR_SAL=3000;     // min-priced WRs excluded: 5.4% hit rate vs 9.7% baseline
-const STACK_MAX_WR=3;      // deepest receiver considered (WR4 pivots averaged 26.2 vs 33.0 for WR1)
-const STACK_TOP_N=24;      // best stacks overall — NOT one per team
-const LEV_TOP_N=12;
-
-/* per-player sim boom rate when sim.json is loaded, else null */
-function simBoom(p){
-  const s=(typeof SIMS!=='undefined'&&SIMS)?SIMS[p.id]:null;
-  return s&&typeof s.boom==='number'?s.boom:null;
-}
-function stackGrade(s){
-  const M=STACK_MODEL, z=(k,v)=>(v-M.mu[k])/M.sd[k];
-  const L=M.coef.proj*z('proj',s.proj)
-         +M.coef.qb_sal*z('qb_sal',s.qb.sal>0?s.qb.sal/1000:M.mu.qb_sal)
-         +M.coef.cap*z('cap',s.salPct!=null?s.salPct:M.mu.cap)
-         +M.coef.wr_rank*z('wr_rank',s.wrRank)
-         +M.b;
-  return +(100/(1+Math.exp(-L))).toFixed(1);
-}
-
 function renderStacks(){
   const body=document.getElementById('stackbody');
   if(!body) return;
@@ -947,33 +916,35 @@ function renderStacks(){
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!qbs.length) return;
     const qb=qbs[0];
-    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&(!wrMarks||wrMarks.has(p.id))
-        &&!(p.sal>0&&p.sal<=MIN_WR_SAL))
+    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&(!wrMarks||wrMarks.has(p.id)))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!wrs.length) return;
     const g=GAMES.find(x=>x.away===team||x.home===team);
     const gm=g?`${g.away} @ ${g.home}`:'';
-    const mk=(catchers,wrRank)=>{
+    const mk=(catchers,type)=>{
       const all=[qb,...catchers];
       const proj=+(all.reduce((s,p)=>s+p.proj,0)).toFixed(1);
       const own=+(all.reduce((s,p)=>s+p.own,0)).toFixed(1);
       const sal=all.reduce((s,p)=>s+(p.sal||0),0);
       const ceils=all.map(p=>p.ceil).filter(c=>typeof c==='number');
-      const booms=all.map(simBoom).filter(b=>b!=null);
-      const s={gm,qb,catchers,proj,own,wrRank,
+      stacks.push({gm,qb,catchers,proj,own,type,
         sal,
         val: sal>0?+(proj/(sal/1000)).toFixed(2):null,
         salPct: sal>0?+(sal/50000*100).toFixed(1):null,
         ceil: ceils.length===all.length?+(ceils.reduce((s,c)=>s+c,0)).toFixed(1):null,
-        boom: booms.length===all.length?+(booms.reduce((a,b)=>a+b,0)/booms.length).toFixed(1):null};
-      s.grade=stackGrade(s);
-      stacks.push(s);
+        lev:+(proj/Math.max(2,own)).toFixed(2)});
     };
-    // every plausible build for this team — slots are won on merit, so a strong
-    // team can place two or three and a weak one none at all.
-    const top=wrs.slice(0,STACK_MAX_WR);
-    top.forEach((w,i)=>mk([w],i+1));
-    if(top.length>=2) mk([top[0],top[1]],1);
+    // chalk: top-usage WR, plus a 2nd when his usage runs close
+    const chalk=[wrs[0]];
+    if(wrs[1]&&wrs[1].usage>=wrs[0].usage*0.75) chalk.push(wrs[1]);
+    mk(chalk,'CHALK');
+    // leverage: lowest-owned among the top-4 usage WRs with real usage,
+    // meaningfully lower-owned than the chalk guy
+    const cands=wrs.slice(1,4).filter(w=>w.usage>=wrs[0].usage*0.4);
+    if(cands.length){
+      const piv=cands.sort((a,b)=>a.own-b.own)[0];
+      if(piv.own<wrs[0].own-0.5||wrs[0].own===0) mk([piv],'LEVERAGE');
+    }
   });
   const rowHTML=s=>`
     <tr>
@@ -985,19 +956,14 @@ function renderStacks(){
       <td class="num">${s.val!=null?s.val:'—'}</td>
       <td class="num" style="color:var(--muted)">${s.salPct!=null?'$'+(s.sal/1000).toFixed(1)+'k · '+s.salPct+'%':'—'}</td>
       <td class="num" style="color:var(--muted)">${s.own>0?s.own+'%':'—'}</td>
-      <td class="num" style="font-weight:700" title="modelled chance this stack lands in the top decile for its size (2024-2025 fit)">${s.grade}</td>
+      <td class="num" style="font-weight:700">${s.own>0?s.lev:'—'}</td>
     </tr>`;
   const empty=msg=>`<tr><td colspan="8" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">${msg}</td></tr>`;
-  const byGrade=(a,b)=>b.grade-a.grade||b.proj-a.proj;
-  // leverage = the same ranking, filtered to stacks the field is under-rostering.
-  // ownership is not a quality signal, so it gates the list rather than scoring it.
-  const owned=stacks.filter(s=>s.own>0).map(s=>s.own).sort((a,b)=>a-b);
-  const medOwn=owned.length?owned[Math.floor(owned.length/2)]:0;
-  const levs=stacks.filter(s=>s.own>0&&s.own<medOwn).sort(byGrade).slice(0,LEV_TOP_N);
+  const levs=stacks.filter(s=>s.type==='LEVERAGE').sort((a,b)=>b.lev-a.lev||b.proj-a.proj).slice(0,12);
   body.innerHTML=levs.length?levs.map(rowHTML).join(''):empty('Leverage pivots appear once ownership projections separate the field.');
   const rbody=document.getElementById('rstackbody');
   if(rbody){
-    const regs=stacks.slice().sort(byGrade).slice(0,STACK_TOP_N);
+    const regs=stacks.filter(s=>s.type==='CHALK').sort((a,b)=>b.proj-a.proj).slice(0,24);
     rbody.innerHTML=regs.length?regs.map(rowHTML).join(''):empty('Stacks appear when the slate has QBs and receivers with usage.');
   }
 }
