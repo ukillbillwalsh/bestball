@@ -605,7 +605,7 @@
         <tbody id="mcbody"></tbody>
       </table>
     </div>
-    <p class="footnote">The Matchup score blends the opponent's DvP rank (60%) with the player's own PFF grade (40%) — an 88+ grade is treated as matchup proof and floors at 7.0 no matter the defense. Defensive explosiveness allowed (CFBD, garbage time excluded) then adjusts: a leaky-quartile defense adds up to +1.25 (more when the player is himself explosive — YPRR 2.0+ for WRs, 5.5+ per carry for RBs), a stingy-quartile defense subtracts, gently for elite grades. Hover any score for its components. Starters only uses the STARTER marks from your workbook when the export carries them; otherwise it keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
+    <p class="footnote">The Matchup score blends the opponent's DvP rank (60%) with the player's own PFF grade (40%) — an 88+ grade is treated as matchup proof and floors at 7.0 no matter the defense. Defensive explosiveness allowed (CFBD, garbage time excluded) then adjusts: a leaky-quartile defense adds up to +1.25 (more when the player is himself explosive — YPRR 2.0+ for WRs, 5.5+ per carry for RBs), a stingy-quartile defense subtracts, gently for elite grades. For receivers, a PFF <b>man/zone scheme edge</b> lands last: a proven man-beater or zone-beater (from PFF split YPRR) facing a defense that leans toward the coverage he beats gains +0.75, and loses a touch against the opposite shell. Hover any score for its components. Starters only uses the STARTER marks from your workbook when the export carries them; otherwise it keeps each team's top of the depth chart by the workbook's usage column — the QB1, top-2 RBs, and top-3 WRs — which tracks who started the previous week; toggle it off for the full pool. Detail column: QBs show the opponent's completion % allowed, WRs the opponent's catch rate allowed to receivers, RBs the trench battle — the offense's line yards created per rush against the defense's line yards conceded, with the differential (positive favors the runner). Matchup score 1-10 from the opponent's defense-vs-position rank across all FBS: 10 = the defense that allows the most fantasy points to this position, 1 = the stingiest. DvP Rank reads "#120 of 135" — the higher the number, the softer the defense. Players whose opponent isn't set (or is FCS without data) show a dash.</p>
   </section>
 
   <!-- OPTIMIZER -->
@@ -748,6 +748,9 @@ let PLAYERS = [];      // [name,pos,team,opp,sal,proj,ceil,own,usage]
 let STATDATA = {QB:{cols:[],rows:[]},RB:{cols:[],rows:[]},WR:{cols:[],rows:[]}};
 let TEAMS = {};        // team -> {pace,passRate}
 let TEAMSTATS = {};    // team -> SP+/pass-lean/target-concentration from teamstats.json
+let SCHEME = {defense:{}, receivers:{}};   // PFF man/zone scheme layer (scheme.json)
+function schemeNorm(s){const n=(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').trim().split(/\s+/);
+  if(n.length&&['jr','sr','ii','iii','iv','v'].includes(n[n.length-1]))n.pop();return n.join('');}
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
 let DVP = {};          // {QB:{abbr:{rank,ptsG,cmpPct/catchPct}},...} defense-vs-position
 let LINES = {};        // {abbr:{ol,dl}} line yards: OL created / DL conceded per rush
@@ -1419,6 +1422,16 @@ function mcScore(p){
       else if(pct<=25){score-=(p.grade!=null&&p.grade>=85?0.4:0.75);parts.push(`stingy-D ${pct}th`);}
     }
   }
+  // PFF man/zone scheme edge (WRs): a scheme-beater meeting a defense that
+  // plays the coverage he beats is a smash; against the opposite shell, a trim
+  if(score!=null && p.pos==='WR' && opp){
+    const rcv=SCHEME.receivers[schemeNorm(p.name)];
+    const def=SCHEME.defense[opp];
+    if(rcv&&def&&rcv.beats&&rcv.beats!=='BALANCED'&&def.lean&&def.lean!=='MIXED'){
+      if(rcv.beats===def.lean){score+=0.75;parts.push(`${rcv.beats.toLowerCase()}-beater vs ${def.lean.toLowerCase()} D (${def.lean==='MAN'?def.manPct:def.zonePct}%)`);}
+      else{score-=0.4;parts.push(`${rcv.beats.toLowerCase()}-beater vs ${def.lean.toLowerCase()} D`);}
+    }
+  }
   if(score!=null) score=+Math.min(10,Math.max(1,score)).toFixed(1);
   return {score, opp, rank:e?e.rank:null, ptsG:e?e.ptsG:null, n, parts};
 }
@@ -1652,6 +1665,7 @@ async function loadData(){
   try{ proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json(); }
   catch(e){ console.warn('projections not found — using bundled sample',e); }
   try{ TEAMSTATS = (await (await fetch(DATA_BASE+'teamstats.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ TEAMSTATS = {}; }
+  try{ const sj = await (await fetch(DATA_BASE+'scheme.json',{cache:'no-store'})).json(); SCHEME = {defense:sj.defense||{}, receivers:sj.receivers||{}}; }catch(e){ SCHEME = {defense:{}, receivers:{}}; }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
   try{ pr = await (await fetch(DATA_BASE+'props.json',{cache:'no-store'})).json(); }
