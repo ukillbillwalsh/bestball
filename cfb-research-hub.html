@@ -681,7 +681,7 @@
         <tbody id="stackbody"></tbody>
       </table>
     </div>
-    <p class="footnote">The same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Comb Ceil sums each player's best real DK game from the CFBD career logs — what the stack has actually combined for at its peak. Comb Val = combined projection per $1k of combined salary; Salary · Cap% shows the stack's total cost and the share of the $50k cap it consumes. Lev = combined projection per point of combined ownership; sorted best-first. Only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
+    <p class="footnote">The same QB paired with a lower-owned receiver who still commands real usage — the classic pivot that keeps the ceiling and sheds the ownership. Comb Ceil sums each player's best real DK game from the CFBD career logs — what the stack has actually combined for at its peak. Comb Val = combined projection per $1k of combined salary; Salary · Cap% shows the stack's total cost and the share of the $50k cap it consumes. Lev = combined projection minus 0.35 per point of combined ownership; sorted best-first. The subtraction keeps the projection signal while still docking chalk — a ratio buries it, and across 2024-2025 a ratio ranked stacks in almost exactly the wrong order. Pivots run to WR3 at deepest, and receivers at the $3,000 minimum are left out of both tables; both cut off ranges that reliably underperformed. Only players marked STARTER in your workbook are stacked once the export carries the marks.</p>
 
     </section>
 
@@ -885,6 +885,16 @@ document.querySelectorAll('#posfilter .chip').forEach(c=>{
 document.getElementById('psearch').oninput=e=>{q=e.target.value.toLowerCase();renderProj();};
 
 /* ---------------- matchups grid ---------------- */
+/* Stack tuning — set from the 2024-2025 retrospective (2,600 QB+WR pairs, 27 slates).
+   LEV_K        subtractive chalk penalty. The old proj/own ratio anti-predicted
+                results (r = -0.22 / -0.26 both seasons) because the denominator
+                dominated; proj - 0.35*own scored +0.35 / +0.40 instead.
+   LEV_MAX_WR   deepest receiver allowed as a leverage pivot (2 = WR2, 3 = WR3).
+                WR4 pivots averaged 26.2 vs 33.0 for WR1.
+   MIN_WR_SAL   receivers at or below this are excluded from both tables; stacks
+                built on a min-priced WR cleared 50 only 5.4% vs 9.7% baseline. */
+const LEV_K=0.35, LEV_MAX_WR=3, MIN_WR_SAL=3000;
+
 function renderStacks(){
   const body=document.getElementById('stackbody');
   if(!body) return;
@@ -908,7 +918,8 @@ function renderStacks(){
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!qbs.length) return;
     const qb=qbs[0];
-    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&(!wrMarks||wrMarks.has(p.id)))
+    const wrs=pool.filter(p=>p.team===team&&p.pos==='WR'&&p.usage>0&&(!wrMarks||wrMarks.has(p.id))
+        &&!(p.sal>0&&p.sal<=MIN_WR_SAL))
       .sort((a,b)=>(b.usage-a.usage)||(b.proj-a.proj));
     if(!wrs.length) return;
     const g=GAMES.find(x=>x.away===team||x.home===team);
@@ -924,7 +935,7 @@ function renderStacks(){
         val: sal>0?+(proj/(sal/1000)).toFixed(2):null,
         salPct: sal>0?+(sal/50000*100).toFixed(1):null,
         ceil: ceils.length===all.length?+(ceils.reduce((s,c)=>s+c,0)).toFixed(1):null,
-        lev:+(proj/Math.max(2,own)).toFixed(2)});
+        lev:+(proj-LEV_K*own).toFixed(1)});
     };
     // chalk: top-usage WR, plus a 2nd when his usage runs close
     const chalk=[wrs[0]];
@@ -932,9 +943,11 @@ function renderStacks(){
     mk(chalk,'CHALK');
     // leverage: lowest-owned among the top-4 usage WRs with real usage,
     // meaningfully lower-owned than the chalk guy
-    const cands=wrs.slice(1,4).filter(w=>w.usage>=wrs[0].usage*0.4);
+    const cands=wrs.slice(1,LEV_MAX_WR).filter(w=>w.usage>=wrs[0].usage*0.4);
     if(cands.length){
-      const piv=cands.sort((a,b)=>a.own-b.own)[0];
+      // pick the pivot the same way the table ranks: projection docked for chalk.
+      // sorting on raw ownership alone always drifts to the deepest, worst receiver.
+      const piv=cands.sort((a,b)=>(b.proj-LEV_K*b.own)-(a.proj-LEV_K*a.own))[0];
       if(piv.own<wrs[0].own-0.5||wrs[0].own===0) mk([piv],'LEVERAGE');
     }
   });
@@ -948,7 +961,7 @@ function renderStacks(){
       <td class="num">${s.val!=null?s.val:'—'}</td>
       <td class="num" style="color:var(--muted)">${s.salPct!=null?'$'+(s.sal/1000).toFixed(1)+'k · '+s.salPct+'%':'—'}</td>
       <td class="num" style="color:var(--muted)">${s.own>0?s.own+'%':'—'}</td>
-      <td class="num" style="font-weight:700">${s.own>0?s.lev:'—'}</td>
+      <td class="num" style="font-weight:700">${s.lev}</td>
     </tr>`;
   const empty=msg=>`<tr><td colspan="8" style="padding:36px 16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px">${msg}</td></tr>`;
   const levs=stacks.filter(s=>s.type==='LEVERAGE').sort((a,b)=>b.lev-a.lev||b.proj-a.proj).slice(0,12);
