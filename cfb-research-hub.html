@@ -1591,13 +1591,34 @@ function schemeCell(p){
     +(!b.txt&&p.mscheme?'<span class="schemedot">ⓘ</span>':'')+`</div>`;
 }
 function schemeDetail(p){
-  // rich player-vs-defense hover for the Matchup Chart: pulls the PFF man/zone
-  // splits for this receiver and the opponent's coverage tendency + how they
-  // grade / how QBs rate against them in each shell.
+  // Position-aware player-vs-defense hover for the Matchup Chart.
+  //   WR / QB -> PFF man/zone coverage read (receiver splits + opponent coverage
+  //              tendency, cover grade, QB rating by shell).
+  //   RB      -> trench read instead: opponent DL FRONT identity (pass-rush front
+  //              from scheme.json) + the OL-vs-DL run-blocking line yards.
+  //              (front is pass-rush-derived, so pressure/blitz speak to pass-down
+  //               / pass-pro; the line-yards line is the run-game matchup.)
   const opp=mcOppOf(p);
-  const lines=[];
-  const rcv=p.pos==='WR'?SCHEME.receivers[schemeNorm(p.name)]:null;
   const def=opp?SCHEME.defense[opp]:null;
+  const lines=[];
+  if(p.pos==='RB'){
+    const fr=def?def.front:null;
+    if(fr){
+      lines.push(`${opp} front — ${fr.archetype}`);
+      const seg=[];
+      if(fr.pressurePct!=null) seg.push(`pressure ${fr.pressurePct}th`);
+      if(fr.frontWinPct!=null) seg.push(`front-win ${fr.frontWinPct}th`);
+      if(fr.blitzPct!=null)    seg.push(`blitz ${fr.blitzPct}th`);
+      if(seg.length) lines.push(seg.join(' · '));
+    }
+    const ol=LINES[p.team], dl=opp?LINES[opp]:null;
+    if(ol&&dl){
+      const diff=+(ol.ol-dl.dl).toFixed(2);
+      lines.push(`OL vs DL line yds — ${ol.ol.toFixed(2)} v ${dl.dl.toFixed(2)} (${diff>=0?'+':''}${diff.toFixed(2)})`);
+    }
+    return lines.join('\n');
+  }
+  const rcv=p.pos==='WR'?SCHEME.receivers[schemeNorm(p.name)]:null;
   if(rcv){
     const my=rcv.manYprr!=null?rcv.manYprr.toFixed(2):'—';
     const zy=rcv.zoneYprr!=null?rcv.zoneYprr.toFixed(2):'—';
