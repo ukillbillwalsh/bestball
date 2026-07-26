@@ -370,6 +370,28 @@
   .gx-edge{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;margin-left:auto}
   .gx-pass{border-top:1px dashed rgba(129,149,179,.15);margin-top:4px;padding-top:6px}
   .gx-team{min-width:0}
+  .coresgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .core{background:var(--panel,#111827);border:1px solid rgba(129,149,179,.16);border-radius:12px;overflow:hidden}
+  .core-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;border-bottom:1px solid rgba(129,149,179,.14);background:rgba(129,149,179,.04)}
+  .core-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:14px;color:#fff;flex-shrink:0}
+  .core-nm{font-family:var(--disp);font-weight:700;font-size:15px}
+  .core-tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.4px}
+  .core-meta{margin-left:auto;text-align:right;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .core-meta b{display:block;color:#e8edf7;font-size:13px}
+  .core-row{display:flex;align-items:center;gap:10px;padding:8px 15px;border-bottom:1px solid rgba(129,149,179,.07)}
+  .core-row:last-child{border-bottom:none}
+  .core-pos{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted);width:34px;flex-shrink:0}
+  .core-pn{font-family:var(--disp);font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px}
+  .core-sub{font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .core-sal{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--accent2);font-weight:700}
+  .core-empty{padding:52px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px}
+  .cb-wrap{background:var(--panel,#111827);border:1px solid rgba(129,149,179,.2);border-radius:12px;padding:16px;margin-bottom:16px}
+  .cb-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
+  .cb-slot{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(129,149,179,.18);border-radius:8px;min-width:180px;background:rgba(0,0,0,.15)}
+  .cb-slot .p{font-family:var(--mono);font-size:10px;color:var(--muted);width:30px}
+  .cb-inp{background:#0b0f17;border:1px solid rgba(129,149,179,.25);border-radius:7px;color:#e8edf7;font-family:var(--mono);font-size:12px;padding:6px 9px}
+  .cb-btn{background:var(--accent2,#41d67c);color:#04120a;border:none;border-radius:8px;font-family:var(--disp);font-weight:800;font-size:12px;padding:8px 14px;cursor:pointer}
+  .cb-out{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:pre-wrap;word-break:break-all;background:#0b0f17;border-radius:8px;padding:11px;max-height:180px;overflow:auto;margin-top:10px}
   .fieldwrap{display:flex;justify-content:center}
   .field{position:relative;width:min(680px,100%);height:520px;border-radius:14px;overflow:hidden;
     background-color:#0f351d;
@@ -502,6 +524,7 @@
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
     <button data-view="lev">Stacks<span class="tg">chalk · leverage</span></button>
     <button data-view="depth">Depth Charts<span class="tg">starters on the field</span></button>
+    <button data-view="cores">Cores<span class="tg">who the pros are playing</span></button>
     <button data-view="stats">Player Stats<span class="tg">QB · RB · WR profiles</span></button>
     <button data-view="props">Props<span class="tg">underdog · lines</span></button>
   </nav>
@@ -691,6 +714,16 @@
     <div class="toolbar"><div class="filters" id="depthteams"></div></div>
     <div class="fieldwrap"><div class="field" id="fieldbox"></div></div>
     <p class="footnote">Starters come from the STARTER marks in your workbook (top of the depth chart by usage until a slate's marks are exported). 🔥 = averaging hot over the last 5 real games; 🧊 = ice cold. Hover any player for his last-5 DK scores.</p>
+  </section>
+
+  <section class="view" id="view-cores">
+    <div class="toolbar">
+      <div class="refresh" id="coresmeta">The day's cores from the RPS pros</div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="colstoggle" id="coresbuild" style="display:none">+ Build a core</button>
+    </div>
+    <div id="coresgrid" class="coresgrid"></div>
+    <p class="footnote">Each card is one RPS pro's core for the slate — the players they're building around today. Five roster spots per core. Cores publish when the sheet is synced; they are a look at what the room is playing, not locked lineups.</p>
   </section>
 
   <!-- QB / RB / WR STATS -->
@@ -1014,6 +1047,91 @@ function gxMatchup(away,home){
       ${ph?`<span class="gx-stat">${home} <b>${ph}</b></span>`:''}
     </div>`:'';
   return line(away,a,home,h)+line(home,h,away,a)+passLine;
+}
+let CORES=[], CORES_UPDATED='';
+const CORE_SLOTS=5;
+const AV_COLORS=['#6c5ce7','#00b894','#0984e3','#e17055','#e84393','#fdcb6e','#00cec9','#d63031','#a29bfe'];
+function avColor(name){let h=0;for(const c of (name||'')) h=(h*31+c.charCodeAt(0))>>>0;return AV_COLORS[h%AV_COLORS.length];}
+function coreInitial(name){return (name||'?').trim().charAt(0).toUpperCase()||'?';}
+function poolByName(nm){const k=(nm||'').toLowerCase().trim();return pool.find(p=>(p.name||'').toLowerCase()===k)||null;}
+function renderCores(){
+  const grid=document.getElementById('coresgrid'); if(!grid) return;
+  const meta=document.getElementById('coresmeta');
+  if(meta) meta.innerHTML = CORES.length
+    ? `<b>${CORES.length}</b> ${CORES.length===1?'pro has':'pros have'} cores today${CORES_UPDATED?' · '+new Date(CORES_UPDATED).toLocaleDateString():''}`
+    : 'The day\'s cores from the RPS pros';
+  // admin builder toggle (?admin=1 in the URL) shows the picker
+  const isAdmin = /[?&]admin=1/.test(location.search);
+  const buildBtn=document.getElementById('coresbuild');
+  if(buildBtn) buildBtn.style.display = isAdmin?'':'none';
+  let html = isAdmin ? coreBuilderHTML() : '';
+  if(!CORES.length){
+    html += `<div class="core-empty">No cores posted for this slate yet.${isAdmin?' Build one above.':''}</div>`;
+    grid.innerHTML=html; if(isAdmin) wireBuilder(); return;
+  }
+  html += CORES.map(c=>{
+    const rows=(c.players||[]).slice(0,CORE_SLOTS).map(pn=>{
+      const p=poolByName(pn);
+      return `<div class="core-row">
+        <span class="core-pos">${p?p.pos:''}</span>
+        <span class="core-pn">${p?logoImg(p.team):''}${pn}</span>
+        ${p?`<span class="core-sub">${p.team} vs ${p.opp}</span>`:''}
+        <span class="core-sal">${p?'$'+(p.sal/1000).toFixed(1)+'k':'—'}</span>
+      </div>`;
+    }).join('');
+    const filled=(c.players||[]).map(poolByName).filter(Boolean);
+    const salsum=filled.reduce((s,p)=>s+p.sal,0);
+    const projsum=filled.reduce((s,p)=>s+p.proj,0);
+    return `<div class="core">
+      <div class="core-hd">
+        <span class="core-av" style="background:${avColor(c.name)}">${coreInitial(c.name)}</span>
+        <div><div class="core-nm">${c.name||'Pro'}</div><div class="core-tag">${c.slate||''}</div></div>
+        <div class="core-meta"><b>${projsum?projsum.toFixed(1):'—'}</b>proj · $${(salsum/1000).toFixed(1)}k</div>
+      </div>
+      ${rows||'<div class="core-empty">No players yet.</div>'}
+    </div>`;
+  }).join('');
+  grid.innerHTML=html;
+  if(isAdmin) wireBuilder();
+}
+function coreBuilderHTML(){
+  const slots=Array.from({length:CORE_SLOTS},(_,i)=>
+    `<div class="cb-slot"><span class="p">P${i+1}</span><input class="cb-inp cb-player" list="cb-players" data-i="${i}" placeholder="player name" style="flex:1"></div>`).join('');
+  return `<div class="cb-wrap">
+    <div class="cb-row">
+      <input class="cb-inp" id="cb-name" placeholder="your name" style="width:150px">
+      <input class="cb-inp" id="cb-slate" placeholder="slate (e.g. DK Main)" style="width:150px">
+    </div>
+    <div class="cb-row">${slots}</div>
+    <datalist id="cb-players">${pool.slice().filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.name}">`).join('')}</datalist>
+    <div class="cb-row">
+      <button class="cb-btn" id="cb-add">Add / update my core</button>
+      <button class="cb-btn" id="cb-copy" style="background:#334155;color:#e8edf7">Copy cores.json</button>
+      <span class="core-tag" id="cb-status"></span>
+    </div>
+    <div class="cb-out" id="cb-out" style="display:none"></div>
+  </div>`;
+}
+function wireBuilder(){
+  const add=document.getElementById('cb-add'); if(!add||add._w) return; add._w=1;
+  add.onclick=()=>{
+    const name=(document.getElementById('cb-name').value||'').trim();
+    if(!name){document.getElementById('cb-status').textContent='enter your name first';return;}
+    const slate=(document.getElementById('cb-slate').value||'').trim();
+    const players=[...document.querySelectorAll('.cb-player')].map(i=>i.value.trim()).filter(Boolean);
+    const i=CORES.findIndex(c=>c.name.toLowerCase()===name.toLowerCase());
+    const core={name,slate,players};
+    if(i>=0)CORES[i]=core;else CORES.push(core);
+    CORES_UPDATED=new Date().toISOString();
+    document.getElementById('cb-status').textContent=`saved locally (${players.length} players) — Copy cores.json to publish`;
+    renderCores();
+  };
+  const copy=document.getElementById('cb-copy');
+  if(copy&&!copy._w){copy._w=1;copy.onclick=()=>{
+    const json=JSON.stringify({updated:CORES_UPDATED||new Date().toISOString(),cores:CORES},null,2);
+    const out=document.getElementById('cb-out'); out.style.display='block'; out.textContent=json;
+    if(navigator.clipboard) navigator.clipboard.writeText(json).then(()=>{document.getElementById('cb-status').textContent='cores.json copied to clipboard';});
+  };}
 }
 let depthTeam=null;
 const L5_HOT={QB:20,RB:15,WR:15}, L5_COLD=8;
@@ -1350,7 +1468,7 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderStacks();renderDepth();renderMChart();
+  renderProj();renderGames();renderStacks();renderDepth();renderCores();renderMChart();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
@@ -1729,6 +1847,7 @@ async function loadData(){
   try{ TEAMSTATS = (await (await fetch(DATA_BASE+'teamstats.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ TEAMSTATS = {}; }
   try{ const sj = await (await fetch(DATA_BASE+'scheme.json',{cache:'no-store'})).json(); SCHEME = {defense:sj.defense||{}, receivers:sj.receivers||{}}; }catch(e){ SCHEME = {defense:{}, receivers:{}}; }
   try{ COORD = (await (await fetch(DATA_BASE+'coordinators.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ COORD = {}; }
+  try{ const cj = await (await fetch(DATA_BASE+'cores.json',{cache:'no-store'})).json(); CORES = cj.cores||[]; CORES_UPDATED = cj.updated||''; }catch(e){ CORES = []; CORES_UPDATED=''; }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
   try{ pr = await (await fetch(DATA_BASE+'props.json',{cache:'no-store'})).json(); }
