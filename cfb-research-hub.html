@@ -109,6 +109,57 @@
   .search:focus{border-color:var(--accent)}
   .search::placeholder{color:var(--dim)}
 
+  /* ---------- team / coach profile ---------- */
+  .profselect{background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--body);font-size:15px;padding:7px 10px;outline:none;max-width:280px}
+  .profselect:focus{border-color:var(--accent)}
+  .profhead{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:14px}
+  .profhead .plogo{width:64px;height:64px;object-fit:contain;flex-shrink:0}
+  .profhead h2{font-family:var(--disp);font-size:30px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;line-height:1}
+  .profhead .psub{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:1px;margin-top:6px;text-transform:uppercase}
+  .pwinbox{margin-left:auto;border:2px solid var(--ink);border-radius:10px;padding:10px 22px;text-align:center;background:var(--bg2);flex-shrink:0}
+  .pwinbox .lbl{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  .pwinbox .num{font-family:var(--disp);font-size:38px;font-weight:700;line-height:1.05}
+  .pwinbox .sub{font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .pgrid{display:grid;grid-template-columns:1.05fr 1.35fr 1.1fr;gap:14px;margin-bottom:14px}
+  .pgrid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .ppanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .ptitle{font-family:var(--disp);font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--line2);padding-bottom:8px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .ptitle .r{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:none}
+  .pnotes{list-style:square}
+  .pnotes li{font-family:var(--body);font-size:15px;color:var(--muted);margin:0 0 10px 16px;line-height:1.35}
+  .pnotes li b{color:var(--ink)}
+  .coachrow{margin-bottom:13px}
+  .coachrow .who{font-family:var(--disp);font-size:16px;font-weight:600;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .coachrow .role{color:var(--accent2);font-size:12px;font-family:var(--mono);letter-spacing:1px}
+  .coachrow .det{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.55}
+  .stchip{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:5px;border:1px solid var(--line2);color:var(--muted)}
+  .stchip.new{background:var(--accent2);border-color:var(--accent2);color:#0a0e16;font-weight:600}
+  .idrow{display:flex;align-items:center;gap:9px;margin:7px 0;font-family:var(--mono);font-size:11.5px}
+  .idrow .k{width:118px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;font-size:10.5px;flex-shrink:0}
+  .idrow .v{width:54px;text-align:right;font-weight:600;flex-shrink:0}
+  .pbarw{flex:1;height:8px;background:var(--bg2);border-radius:5px;overflow:hidden}
+  .pbarw i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--blue),var(--accent))}
+  .pcp{font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:5px;flex-shrink:0;min-width:46px;text-align:center}
+  .pc-hi{background:var(--green-d);color:var(--green)} .pc-lo{background:var(--red-d);color:var(--red)} .pc-mid{background:var(--bg2);color:var(--muted)}
+  .schedrow{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px dashed var(--line);font-family:var(--mono);font-size:12px}
+  .schedrow:last-child{border-bottom:none}
+  .schedrow .dt{width:42px;color:var(--dim);flex-shrink:0}
+  .schedrow .ha{width:22px;color:var(--muted);flex-shrink:0}
+  .schedrow .op{flex:1;display:flex;align-items:center;gap:7px;color:var(--ink);min-width:0;overflow:hidden;white-space:nowrap}
+  .schedrow .rk{color:var(--dim);font-size:10px}
+  .wpchip{font-family:var(--mono);font-size:11px;font-weight:600;padding:1px 8px;border-radius:5px;min-width:46px;text-align:center;flex-shrink:0}
+  .wp-hi{background:var(--green-d);color:var(--green)} .wp-lo{background:var(--red-d);color:var(--red)} .wp-md{background:rgba(255,176,31,.12);color:var(--accent2)}
+  .rankboxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .rankbox{border-radius:10px;padding:12px 8px;text-align:center;background:var(--bg2);border:1px solid var(--line2)}
+  .rankbox .num{font-family:var(--disp);font-size:26px;font-weight:700}
+  .rankbox .lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:2px}
+  .rankbox.good{background:var(--green-d);border-color:rgba(39,215,150,.35)} .rankbox.good .num{color:var(--green)}
+  .rankbox.bad{background:var(--red-d);border-color:rgba(255,77,94,.35)} .rankbox.bad .num{color:var(--red)}
+  .covbar{display:flex;height:16px;border-radius:6px;overflow:hidden;font-family:var(--mono);font-size:9px;font-weight:600;margin:8px 0 10px}
+  .covbar .man{background:var(--accent);color:#0a0e16;display:flex;align-items:center;justify-content:center}
+  .covbar .zone{background:var(--blue);color:#0a0e16;display:flex;align-items:center;justify-content:center}
+  @media (max-width:1000px){.pgrid,.pgrid2{grid-template-columns:1fr}.profhead{flex-wrap:wrap}.pwinbox{margin-left:0}}
+
   /* ---------- table ---------- */
   .tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   table{width:100%;border-collapse:collapse;font-size:15px}
@@ -524,6 +575,7 @@
     <button data-view="opt">Optimizer<span class="tg">build · stack · export</span></button>
     <button data-view="lev">Stacks<span class="tg">chalk · leverage</span></button>
     <button data-view="depth">Depth Charts<span class="tg">starters on the field</span></button>
+    <button data-view="teams">Teams<span class="tg">coach · scheme · schedule</span></button>
     <button data-view="cores">Cores<span class="tg">who the pros are playing</span></button>
     <button data-view="stats">Player Stats<span class="tg">QB · RB · WR profiles</span></button>
     <button data-view="props">Props<span class="tg">underdog · lines</span></button>
@@ -716,6 +768,21 @@
     <p class="footnote">Starters come from the STARTER marks in your workbook (top of the depth chart by usage until a slate's marks are exported). 🔥 = averaging hot over the last 5 real games; 🧊 = ice cold. Hover any player for his last-5 DK scores.</p>
   </section>
 
+  <!-- TEAM / COACH PROFILES -->
+  <section class="view" id="view-teams">
+    <div class="toolbar">
+      <div class="filters" style="align-items:center">
+        <select class="profselect" id="profpick"></select>
+        <input class="search" id="profsearch" list="proflist" placeholder="Search team…">
+        <datalist id="proflist"></datalist>
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <div class="refresh" id="profmeta"></div>
+    </div>
+    <div id="profcard"></div>
+    <p class="footnote">Coaching + offensive tendencies from CFBD play-by-play (coordinators.json) · coverage &amp; front identity from your PFF exports (scheme.json) · schedule, win probabilities and returning production from profiles.json (SP+ margins, 2.5-pt home field). Percentile chips are FBS-wide, green = high. A new coordinator's carry line shows the identity of the school where he actually called it last season — the team's own 2025 tendencies still belong to the prior staff.</p>
+  </section>
+
   <section class="view" id="view-cores">
     <div class="toolbar">
       <div class="refresh" id="coresmeta">The day's cores from the RPS pros</div>
@@ -787,6 +854,7 @@ let TEAMS = {};        // team -> {pace,passRate}
 let TEAMSTATS = {};    // team -> SP+/pass-lean/target-concentration from teamstats.json
 let SCHEME = {defense:{}, receivers:{}};   // PFF man/zone scheme layer (scheme.json)
 let COORD = {};   // team -> offensive identity (pace/PROE/pass lean) from coordinators.json
+let PROFILES = {}; // team -> schedule / projected win total / returning production (profiles.json)
 function schemeNorm(s){const n=(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').trim().split(/\s+/);
   if(n.length&&['jr','sr','ii','iii','iv','v'].includes(n[n.length-1]))n.pop();return n.join('');}
 let LOGOS = {};        // team abbrev -> logo URL (from projections.json)
@@ -1238,6 +1306,182 @@ function renderDepth(){
   });
   box.innerHTML=html||`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-family:var(--mono);font-size:13px">No starters for ${depthTeam} yet.</div>`;
 }
+
+/* ---------------- team / coach profiles ---------------- */
+// scheme.json (PFF short names) and profiles.json (cfbd_lines canon) can key a
+// handful of schools under a different DK abbrev than coordinators.csv — the
+// alias groups make every lookup land regardless of which variant a file used.
+const ALIAS_GROUPS=[['BAMA','ALA','ALAB'],['CHAR','CLT'],['ILLI','ILL'],['MIAOH','M-OH'],
+  ['RUT','RUTG'],['SCAR','SC'],['TAMU','TA&M'],['UCONN','CONN'],['UF','FLA'],
+  ['UMASS','MASS'],['UMD','MD'],['VAND','VAN','VANDY'],['WISC','WIS'],['WSH','WASH']];
+function aliasGet(obj,ab){
+  if(!obj) return null;
+  if(obj[ab]!=null) return obj[ab];
+  const grp=ALIAS_GROUPS.find(g=>g.includes(ab));
+  if(grp) for(const a of grp){ if(obj[a]!=null) return obj[a]; }
+  return null;
+}
+let profTeam=localStorage.getItem('hubProfTeam')||null;
+function profTeamList(){
+  return Object.keys(COORD).filter(k=>COORD[k].headCoach||COORD[k].oc||COORD[k].dc)
+    .sort((a,b)=>(COORD[a].team||a).localeCompare(COORD[b].team||b));
+}
+function fmtSigned(v){ return v==null?'—':(v>0?'+':'')+v; }
+function pcp(p,ttl){
+  if(p==null) return '';
+  const c=p>=67?'pc-hi':p<=33?'pc-lo':'pc-mid';
+  return `<span class="pcp ${c}"${ttl?` title="${ttl}"`:''}>${p} pct</span>`;
+}
+function wpChip(wp){
+  if(wp==null) return '<span class="wpchip" style="color:var(--dim)">—</span>';
+  const c=wp>=60?'wp-hi':wp<=40?'wp-lo':'wp-md';
+  return `<span class="wpchip ${c}">${Math.round(wp)}%</span>`;
+}
+function stChip(st){
+  if(!st) return '';
+  const isNew=st==='new';
+  const t=st==='returning*'?'assumed returning (unverified — flag if a G5 move happened)':isNew?'new hire for 2026':'returning';
+  return `<span class="stchip ${isNew?'new':''}" title="${t}">${isNew?'NEW':st==='returning*'?'RET*':'RET'}</span>`;
+}
+function idRow(label,val,unit,pct,barPct){
+  const bp=barPct!=null?barPct:(pct!=null?pct:(typeof val==='number'?val:0));
+  const w=Math.max(3,Math.min(100,bp));
+  return `<div class="idrow"><span class="k">${label}</span><span class="v">${val==null?'—':val}${val==null?'':unit}</span><span class="pbarw"><i style="width:${w}%"></i></span>${pcp(pct)}</div>`;
+}
+function schedDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  if(isNaN(d)) return '';
+  return (d.getMonth()+1)+'/'+String(d.getDate()).padStart(2,'0');
+}
+function rankBox(rank,label){
+  const cls=rank==null?'':rank<=35?'good':rank>=90?'bad':'';
+  return `<div class="rankbox ${cls}"><div class="num">${rank!=null?'#'+rank:'—'}</div><div class="lbl">${label}</div></div>`;
+}
+function renderTeamProfile(){
+  const pick=document.getElementById('profpick'), card=document.getElementById('profcard');
+  if(!pick||!card) return;
+  const teams=profTeamList();
+  if(!teams.length){
+    card.innerHTML='<div class="ppanel" style="text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px;padding:40px">coordinators.json not loaded yet — run build_coordinator_profiles.py and redeploy.</div>';
+    return;
+  }
+  if(!profTeam||!teams.includes(profTeam)) profTeam=teams.find(t=>pool.some(p=>p.team===t))||teams[0];
+  pick.innerHTML=teams.map(t=>`<option value="${t}"${t===profTeam?' selected':''}>${COORD[t].team||t} (${t})</option>`).join('');
+  pick.onchange=()=>{ profTeam=pick.value; localStorage.setItem('hubProfTeam',profTeam); renderTeamProfile(); };
+  const dl=document.getElementById('proflist');
+  if(dl&&dl.children.length!==teams.length) dl.innerHTML=teams.map(t=>`<option value="${COORD[t].team||t}">`).join('');
+  const inp=document.getElementById('profsearch');
+  if(inp&&!inp._wired){ inp._wired=true; inp.oninput=()=>{
+    const q=inp.value.trim().toLowerCase(); if(!q) return;
+    const hit=teams.find(t=>(COORD[t].team||'').toLowerCase()===q||t.toLowerCase()===q)
+           ||teams.find(t=>(COORD[t].team||'').toLowerCase().startsWith(q));
+    if(hit&&hit!==profTeam){ profTeam=hit; localStorage.setItem('hubProfTeam',profTeam); renderTeamProfile(); }
+  };}
+
+  const ab=profTeam, c=COORD[ab]||{};
+  const pf=aliasGet(PROFILES,ab), ts=aliasGet(TEAMSTATS,ab)||{}, d=aliasGet(SCHEME.defense,ab);
+  const fr=d&&d.front, ln=aliasGet(LINES,ab);
+  const meta=document.getElementById('profmeta');
+  if(meta) meta.innerHTML=pf?`Schedule &amp; win probs: <b>SP+ based</b>`:'profiles.json pending — run fetch_team_profiles.py for schedule + win totals';
+
+  // ---- auto notes (hand-written csv notes lead when present)
+  const notes=[];
+  if(c.ocNotes) notes.push(c.ocNotes);
+  if(c.dcNotes) notes.push(c.dcNotes);
+  if(c.ocStatus==='new'&&c.oc){
+    let s=`<b>New OC ${c.oc}</b> arrives from ${c.oc2025School||'?'}.`;
+    if(c.ocCarry) s+=` His ${c.ocCarry.school} offense: ${c.ocCarry.passRate}% pass (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct) · pace ${c.ocCarry.pacePct} pct — expect that identity to travel.`;
+    else s+=` No FBS identity to carry in (NFL / FCS / non-profiled stop) — the tendencies below reflect the prior play-caller.`;
+    notes.push(s);
+  } else if(c.oc){ notes.push(`<b>OC ${c.oc}</b> returns — the tendencies below are his.`); }
+  if(c.dcStatus==='new'&&c.dc) notes.push(`<b>New DC ${c.dc}</b> from ${c.dc2025School||'?'} — the coverage &amp; front data shown is last season's staff.`);
+  else if(c.dc) notes.push(`<b>DC ${c.dc}</b> returns — coverage and front identity should carry.`);
+  if(fr) notes.push(`Defense profiles as a <b>${fr.archetype}</b> — ${fr.pressureRate}% pressure rate (${fr.pressurePct} pct) on a ${fr.blitzProxy}% blitz proxy.`);
+  if(pf&&pf.returning&&pf.returning.overall!=null) notes.push(`Returning <b>${pf.returning.overall}%</b> of offensive production (PPA-weighted).`);
+
+  // ---- coaching panel
+  const carryDet=c.ocCarry?`<br>carry-in @ ${c.ocCarry.school}: pass ${c.ocCarry.passRate}% (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct) · pace ${c.ocCarry.pacePct} pct`:'';
+  const covDet=d?`<br>coverage: man ${d.manPct}% / zone ${d.zonePct}% · lean <b style="color:var(--ink)">${d.lean}</b> · cover grades M ${d.manGrade} / Z ${d.zoneGrade} · QB rtg allowed M ${d.manQbRtg} / Z ${d.zoneQbRtg}`:'';
+  const frDet=fr?`<br>front: ${fr.archetype} · pressure ${fr.pressureRate}% · front win ${fr.frontWinRate}% · blitz proxy ${fr.blitzProxy}%`:'';
+  const coachHtml=`
+    <div class="coachrow"><div class="who"><span class="role">HC</span>${c.headCoach||'—'}</div></div>
+    <div class="coachrow"><div class="who"><span class="role">OC</span>${c.oc||'—'} ${stChip(c.ocStatus)}</div>
+      <div class="det">2025: ${c.oc2025School||'—'}${carryDet}</div></div>
+    <div class="coachrow"><div class="who"><span class="role">DC</span>${c.dc||'—'} ${stChip(c.dcStatus)}</div>
+      <div class="det">2025: ${c.dc2025School||'—'}${covDet}${frDet}</div></div>`;
+
+  // ---- offensive identity rows (team's own 2025 tendencies)
+  const idHtml=[
+    idRow('Pass rate',c.passRate,'%',c.passRatePct,c.passRate),
+    idRow('PROE',c.proe==null?null:fmtSigned(c.proe),'',c.proePct,c.proePct),
+    idRow('Early-down pass',c.earlyDownPassRate,'%',null,c.earlyDownPassRate),
+    idRow('Neutral pass',c.neutralPassRate,'%',null,c.neutralPassRate),
+    idRow('Pace',c.playsG,' /g',c.pacePct,c.pacePct),
+  ].join('');
+
+  // ---- schedule
+  let schedHtml='<div style="color:var(--dim);font-family:var(--mono);font-size:12px;padding:16px 0">profiles.json pending — schedule &amp; win probs land after fetch_team_profiles.py runs.</div>';
+  if(pf&&pf.schedule&&pf.schedule.length){
+    schedHtml=pf.schedule.map(r=>`
+      <div class="schedrow">
+        <span class="dt">${schedDate(r.date)}</span>
+        <span class="ha">${r.neutral?'N':r.home?'vs':'@'}</span>
+        <span class="op">${r.ab?logoImg(r.ab):''}<span title="${r.opp}">${r.ab||r.opp}</span>${r.oppRank?`<span class="rk">#${r.oppRank}</span>`:''}</span>
+        ${wpChip(r.wp)}
+      </div>`).join('');
+  }
+
+  // ---- ratings + returning
+  const ret=pf&&pf.returning;
+  const retHtml=ret?[
+    idRow('Overall',ret.overall,'%',null,ret.overall),
+    idRow('Passing',ret.pass,'%',null,ret.pass),
+    idRow('Rushing',ret.rush,'%',null,ret.rush),
+    idRow('Receiving',ret.rec,'%',null,ret.rec),
+  ].join('')+'<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px">PPA-weighted · offense (CFBD carries no defensive returning metric)</div>'
+  :'<div style="color:var(--dim);font-family:var(--mono);font-size:12px">returning production pending (profiles.json)</div>';
+
+  // ---- defensive scheme panel
+  let defHtml='<div style="color:var(--dim);font-family:var(--mono);font-size:12px">PFF scheme data pending for this team (scheme.json).</div>';
+  if(d){
+    defHtml=`
+      <div class="covbar"><span class="man" style="width:${d.manPct}%">${d.manPct>=14?`MAN ${d.manPct}%`:''}</span><span class="zone" style="width:${d.zonePct}%">${d.zonePct>=14?`ZONE ${d.zonePct}%`:''}</span></div>
+      ${idRow('Cover grade · man',d.manGrade,'',null,d.manGrade)}
+      ${idRow('Cover grade · zone',d.zoneGrade,'',null,d.zoneGrade)}
+      ${fr?idRow('Pressure rate',fr.pressureRate,'%',fr.pressurePct,fr.pressurePct):''}
+      ${fr?idRow('Front win rate',fr.frontWinRate,'%',fr.frontWinPct,fr.frontWinPct):''}
+      ${fr?idRow('Blitz proxy',fr.blitzProxy,'%',fr.blitzPct,fr.blitzPct):''}
+      ${ln?`<div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:9px">Line yards: OL ${ln.ol} created · DL ${ln.dl} conceded /rush</div>`:''}
+      ${fr?`<div style="font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:5px;text-transform:uppercase;letter-spacing:1px">${fr.archetype}</div>`:''}`;
+  }
+
+  const winNum=pf&&pf.projWins!=null?pf.projWins.toFixed(1):'—';
+  const winSub=pf&&pf.spRank?`SP+ #${pf.spRank}`:'SP+ pending';
+  card.innerHTML=`
+    <div class="profhead">
+      ${LOGOS[ab]?`<img class="plogo" src="${LOGOS[ab]}" alt="" onerror="this.remove()">`:''}
+      <div><h2>${c.team||ab}</h2><div class="psub">${c.conference||''}${c.conference?' · ':''}HC ${c.headCoach||'—'}</div></div>
+      <div class="pwinbox"><div class="lbl">Projected win total</div><div class="num">${winNum}</div><div class="sub">${winSub}</div></div>
+    </div>
+    <div class="pgrid">
+      <div class="ppanel"><div class="ptitle">✎ Notes</div><ul class="pnotes">${notes.map(n=>`<li>${n}</li>`).join('')||'<li>—</li>'}</ul></div>
+      <div class="ppanel">
+        <div class="ptitle">🔑 Coaching / Scheme</div>${coachHtml}
+        <div class="ptitle" style="margin-top:16px">Offensive identity<span class="r">${c.plays?c.plays+' plays · '+(c.season||'last season'):''}</span></div>${idHtml}
+      </div>
+      <div class="ppanel"><div class="ptitle">📅 Schedule<span class="r">${pf&&pf.projWins!=null?'proj '+pf.projWins.toFixed(1)+' W':''}</span></div>${schedHtml}</div>
+    </div>
+    <div class="pgrid2">
+      <div class="ppanel">
+        <div class="ptitle">Ratings · Returning production</div>
+        <div class="rankboxes">${rankBox(pf&&pf.spRank,'SP+ OVR')}${rankBox(ts.spOffRank,'SP+ OFF')}${rankBox(ts.spDefRank,'SP+ DEF')}</div>
+        ${retHtml}
+      </div>
+      <div class="ppanel"><div class="ptitle">Defensive scheme · Front</div>${defHtml}</div>
+    </div>`;
+}
+
 function renderGames(){
   const grid=document.getElementById('gamegrid');
   if(!GAMES.length){
@@ -1527,7 +1771,7 @@ function applyData(proj, odds){
   const stamp=document.getElementById('refresh-stamp');
   if(stamp) stamp.textContent = odds&&odds.updated ? new Date(odds.updated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'workbook baseline';
   // render everything
-  renderProj();renderGames();renderStacks();renderDepth();renderCores();renderMChart();
+  renderProj();renderGames();renderStacks();renderDepth();renderCores();renderMChart();renderTeamProfile();
   ['QB','RB','WR'].forEach(t=>{statSort[t]={k:5,dir:-1};renderStat(t);});
   const arrTh=document.querySelector('#ptable thead th[data-k="val"]');
   if(arrTh && !arrTh.querySelector('.arr')) arrTh.insertAdjacentHTML('beforeend','<span class="arr">▼</span>');
@@ -1938,6 +2182,7 @@ async function loadData(){
   try{ TEAMSTATS = (await (await fetch(DATA_BASE+'teamstats.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ TEAMSTATS = {}; }
   try{ const sj = await (await fetch(DATA_BASE+'scheme.json',{cache:'no-store'})).json(); SCHEME = {defense:sj.defense||{}, receivers:sj.receivers||{}}; }catch(e){ SCHEME = {defense:{}, receivers:{}}; }
   try{ COORD = (await (await fetch(DATA_BASE+'coordinators.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ COORD = {}; }
+  try{ PROFILES = (await (await fetch(DATA_BASE+'profiles.json',{cache:'no-store'})).json()).teams||{}; }catch(e){ PROFILES = {}; }
   try{ const cj = await coresLoad(typeof SLATE_ID!=='undefined'?SLATE_ID:''); CORES = cj.cores||[]; CORES_UPDATED = cj.updated||''; }catch(e){ CORES = []; CORES_UPDATED=''; }
   try{ odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json(); }
   catch(e){ /* odds optional; workbook lines used as baseline */ }
