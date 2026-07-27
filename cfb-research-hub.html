@@ -1434,13 +1434,20 @@ function renderTeamProfile(){
 
   // ---- ratings + returning
   const ret=pf&&pf.returning;
-  const retHtml=ret?[
+  const retHtml=!ret?'<div style="color:var(--dim);font-family:var(--mono);font-size:12px">returning production pending (profiles.json)</div>'
+  :(ret.src==='ESPN'||ret.off!=null)?[
+    idRow('Off returning',ret.off,'%',null,ret.off),
+    ret.offRank!=null?`<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:-3px 0 4px 127px">#${ret.offRank} of 138</div>`:'',
+    idRow('Def returning',ret.def,'%',null,ret.def),
+    ret.defRank!=null?`<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:-3px 0 4px 127px">#${ret.defRank} of 138</div>`:'',
+    idRow('Overall',ret.overall,'%',null,ret.overall),
+  ].join('')+'<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px">ESPN/Connelly returning production · transfers counted (incoming production folded in)</div>'
+  :[
     idRow('Overall',ret.overall,'%',null,ret.overall),
     idRow('Passing',ret.pass,'%',null,ret.pass),
     idRow('Rushing',ret.rush,'%',null,ret.rush),
     idRow('Receiving',ret.rec,'%',null,ret.rec),
-  ].join('')+'<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px">PPA-weighted · offense (CFBD carries no defensive returning metric)</div>'
-  :'<div style="color:var(--dim);font-family:var(--mono);font-size:12px">returning production pending (profiles.json)</div>';
+  ].join('')+'<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px">PPA-weighted · offense (CFBD carries no defensive returning metric)</div>';
 
   // ---- defensive scheme panel
   let defHtml='<div style="color:var(--dim);font-family:var(--mono);font-size:12px">PFF scheme data pending for this team (scheme.json).</div>';
