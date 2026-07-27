@@ -1391,7 +1391,7 @@ function renderTeamProfile(){
   if(c.dcNotes) notes.push(c.dcNotes);
   if(c.ocStatus==='new'&&c.oc){
     let s=`<b>New OC ${c.oc}</b> arrives from ${c.oc2025School||'?'}.`;
-    if(c.ocCarry) s+=` His ${c.ocCarry.school} offense: ${c.ocCarry.passRate}% pass (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct) · pace ${c.ocCarry.pacePct} pct — expect that identity to travel.`;
+    if(c.ocCarry) s+=` His ${c.ocCarry.school} offense: ${c.ocCarry.passRate}% pass (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct)${c.ocCarry.spp!=null?` · ${c.ocCarry.spp}s/play (#${c.ocCarry.sppRank} fastest)`:` · pace ${c.ocCarry.pacePct} pct`} — expect that identity to travel.`;
     else s+=` No FBS identity to carry in (NFL / FCS / non-profiled stop) — the tendencies below reflect the prior play-caller.`;
     notes.push(s);
   } else if(c.oc){ notes.push(`<b>OC ${c.oc}</b> returns — the tendencies below are his.`); }
@@ -1401,13 +1401,18 @@ function renderTeamProfile(){
   if(pf&&pf.returning&&pf.returning.overall!=null) notes.push(`Returning <b>${pf.returning.overall}%</b> of offensive production (PPA-weighted).`);
 
   // ---- coaching panel
-  const carryDet=c.ocCarry?`<br>carry-in @ ${c.ocCarry.school}: pass ${c.ocCarry.passRate}% (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct) · pace ${c.ocCarry.pacePct} pct`:'';
+  const sppTxt=(o)=>o&&o.spp!=null?` · ${o.spp}s/play (#${o.sppRank})`:(o&&o.pacePct!=null?` · pace ${o.pacePct} pct`:'');
+  const carryDet=c.ocCarry?`<br>carry-in @ ${c.ocCarry.school}: pass ${c.ocCarry.passRate}% (${c.ocCarry.passRatePct} pct) · PROE ${fmtSigned(c.ocCarry.proe)} (${c.ocCarry.proePct} pct)${sppTxt(c.ocCarry)}`:'';
+  // every OC gets a tendency line: returning coordinators own this team's 2025
+  // identity, so show it right under the name (was only shown for new hires)
+  const ownIdent=(c.passRate!=null)?`<br>identity (2025): pass ${c.passRate}% (${c.passRatePct} pct) · PROE ${fmtSigned(c.proe)} (${c.proePct} pct)${sppTxt(c)}`:'';
+  const ocIdent=c.ocStatus==='new'?'':ownIdent;
   const covDet=d?`<br>coverage: man ${d.manPct}% / zone ${d.zonePct}% · lean <b style="color:var(--ink)">${d.lean}</b> · cover grades M ${d.manGrade} / Z ${d.zoneGrade} · QB rtg allowed M ${d.manQbRtg} / Z ${d.zoneQbRtg}`:'';
   const frDet=fr?`<br>front: ${fr.archetype} · pressure ${fr.pressureRate}% · front win ${fr.frontWinRate}% · blitz proxy ${fr.blitzProxy}%`:'';
   const coachHtml=`
     <div class="coachrow"><div class="who"><span class="role">HC</span>${c.headCoach||'—'}</div></div>
     <div class="coachrow"><div class="who"><span class="role">OC</span>${c.oc||'—'} ${stChip(c.ocStatus)}</div>
-      <div class="det">2025: ${c.oc2025School||'—'}${carryDet}</div></div>
+      <div class="det">2025: ${c.oc2025School||'—'}${carryDet}${ocIdent}</div></div>
     <div class="coachrow"><div class="who"><span class="role">DC</span>${c.dc||'—'} ${stChip(c.dcStatus)}</div>
       <div class="det">2025: ${c.dc2025School||'—'}${covDet}${frDet}</div></div>`;
 
@@ -1417,7 +1422,8 @@ function renderTeamProfile(){
     idRow('PROE',c.proe==null?null:fmtSigned(c.proe),'',c.proePct,c.proePct),
     idRow('Early-down pass',c.earlyDownPassRate,'%',null,c.earlyDownPassRate),
     idRow('Neutral pass',c.neutralPassRate,'%',null,c.neutralPassRate),
-    idRow('Pace',c.playsG,' /g',c.pacePct,c.pacePct),
+    c.spp!=null?idRow('Sec / play',c.spp,'s',c.pacePct,c.pacePct)+(c.sppRank!=null?`<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:-3px 0 4px 127px">#${c.sppRank} fastest in FBS</div>`:'')
+              :idRow('Pace',c.playsG,' /g',c.pacePct,c.pacePct),
   ].join('');
 
   // ---- schedule
