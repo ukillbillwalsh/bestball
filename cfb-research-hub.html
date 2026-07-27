@@ -1692,6 +1692,17 @@ function mcScore(p){
       else{score-=0.4;parts.push(`${rcv.beats.toLowerCase()}-beater vs ${def.lean.toLowerCase()} D`);}
     }
   }
+  // Running QBs vs man-heavy defenses: in man coverage the defenders turn and
+  // run with their receivers, backs to the QB -- a mobile QB sees green grass to
+  // take off. Boost dual-threat QBs (rush share > 15%) facing a man-lean defense.
+  if(score!=null && p.pos==='QB' && opp){
+    const def=SCHEME.defense[opp];
+    if(def && def.manPct!=null && def.manPct>50 && p.usage!=null && p.usage>15){
+      const bump = p.usage>=25 ? 0.75 : 0.5;   // more for true runners
+      score+=bump;
+      parts.push(`runner vs man D (${def.manPct}%)`);
+    }
+  }
   if(score!=null) score=+Math.min(10,Math.max(1,score)).toFixed(1);
   return {score, opp, rank:e?e.rank:null, ptsG:e?e.ptsG:null, n, parts};
 }
