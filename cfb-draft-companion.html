@@ -180,6 +180,11 @@
   .rosterlist .ritem .ri-bye{font-family:var(--mono);font-size:10px;color:var(--muted)}
   .rosterempty{font-family:var(--mono);font-size:11px;color:var(--dim);padding:12px 4px;text-align:center}
 
+  .envchip{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.5px;padding:1px 7px;border-radius:5px;white-space:nowrap;cursor:help}
+  .envchip.sm{font-size:8.5px;padding:0 5px}
+  .e-hi{background:var(--green-d);color:var(--green)}
+  .e-md{background:rgba(255,176,31,.12);color:var(--accent2)}
+  .e-lo{background:var(--red-d);color:var(--red)}
   .stacks{display:flex;flex-direction:column;gap:8px}
   .stack{background:var(--bg2);border-radius:8px;padding:8px 10px}
   .stack.qb-stack{box-shadow:inset 3px 0 0 var(--accent)}
@@ -469,12 +474,13 @@
           <th data-vk="gap">Gap</th>
           <th data-vk="proj">Proj</th>
           <th data-vk="value">Value</th>
+          <th data-vk="envRank">Env</th>
         </tr>
       </thead>
       <tbody id="vsbody"></tbody>
     </table>
   </div>
-  <p class="footnote"><b>Cost</b> = sum of QB ADP and partner ADP. <b>Gap</b> = ADP distance between them (how much earlier the partner usually goes). <b>Proj</b> = sum of projected points. <b>Value</b> = Proj &divide; Cost.</p>
+  <p class="footnote"><b>Cost</b> = sum of QB ADP and partner ADP. <b>Gap</b> = ADP distance between them (how much earlier the partner usually goes). <b>Proj</b> = sum of projected points. <b>Value</b> = Proj &divide; Cost. <b>Env</b> = offense environment rank (PROE · pace · returning OL · SP+ offense weighted heaviest · schedule softness) — hover the chip for the full breakdown; sort by it to shop stacks in the best offenses.</p>
 </section>
 
 <section class="tab-pane" data-tab-content="portfolio">
@@ -558,6 +564,66 @@
 <script>
 const DATA_URL = (typeof window!=='undefined' && window.BESTBALL_URL) || './bestball.json';
 const LS_KEY = 'cfb_draft_companion_v1';
+
+// ---------- OFFENSE ENVIRONMENT RANKINGS (offense_rankings.json) ----------
+// Composite ranking from build_offense_rankings.py: PROE, seconds/play,
+// returning OL snaps, SP+ offense (weighted heaviest), and schedule softness
+// (avg opponent defensive SP+).  Rank 1 = best environment to stack.
+const ENV_URL = './offense_rankings.json';
+const ENV_ALIAS = [["BAMA","ALA","ALAB"],["CHAR","CLT"],["ILLI","ILL"],["MIAOH","M-OH"],
+  ["RUT","RUTG"],["SCAR","SC"],["TAMU","TA&M"],["UCONN","CONN"],["UF","FLA"],
+  ["UMASS","MASS"],["UMD","MD"],["VAND","VAN","VANDY"],["WISC","WIS"],["WSH","WASH"]];
+let ENV = {byAb:{}, byName:{}, names:[], n:0, weights:null};
+function envNorm(str){
+  return (str||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+}
+async function loadEnv(){
+  try{
+    const d = await (await fetch(ENV_URL, {cache:'no-store'})).json();
+    (d.teams||[]).forEach(t=>{ ENV.byAb[t.dk]=t; ENV.byName[envNorm(t.team)]=t; });
+    ENV.names = Object.keys(ENV.byName);
+    ENV.n = (d.teams||[]).length;
+    ENV.weights = d.weights || null;
+  }catch(e){ /* rankings not deployed yet -- chips just don't render */ }
+}
+function envOf(p){
+  if(!ENV.n || !p) return null;
+  const ab = p.team;
+  if(ab){
+    if(ENV.byAb[ab]) return ENV.byAb[ab];
+    for(const g of ENV_ALIAS){
+      if(g.includes(ab)){ for(const a of g){ if(ENV.byAb[a]) return ENV.byAb[a]; } }
+    }
+  }
+  const n = envNorm(p.teamFull || '');
+  if(!n) return null;
+  if(ENV.byName[n]) return ENV.byName[n];
+  // last resort: teamFull carries a mascot ("Georgia Bulldogs") -- take the
+  // LONGEST ranking-team name that prefixes it (so "Miami (OH) RedHawks"
+  // lands on Miami (OH), not Miami)
+  let best = null;
+  for(const k of ENV.names){
+    if(n.startsWith(k) && (!best || k.length > best.length)) best = k;
+  }
+  return best ? ENV.byName[best] : null;
+}
+function envTip(e){
+  const f = (lbl,v,pct)=> v==null ? null : `${lbl} ${v}${pct!=null?` (${Math.round(pct)} pct)`:''}`;
+  const bits = [
+    f('PROE', e.proe, e.proe_pct),
+    f('sec/play', e.spp, e.spp_pct),
+    f('OL snaps', e.ret_ol, e.ol_pct),
+    f('SP+ off', e.sp_off, e.sp_pct),
+    f('SoS (opp def SP+)', e.sos, e.sos_pct),
+  ].filter(Boolean).join('\n');
+  return `Offense environment #${e.rank} of ${ENV.n} -- score ${e.score}\n${bits}${e.partial?'\n(partial data)':''}`;
+}
+function envChip(e, sm){
+  if(!e) return '';
+  const cls = e.rank <= 25 ? 'e-hi' : e.rank <= 70 ? 'e-md' : 'e-lo';
+  return `<span class="envchip ${cls}${sm?' sm':''}" title="${envTip(e)}">ENV #${e.rank}</span>`;
+}
 
 // BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
 // matching the `team` field in bestball.json.  If non-empty, it overrides
@@ -806,7 +872,7 @@ function renderStacks(){
     const players = arr.sort((a,b)=>({QB:0,RB:1,WR:2,TE:3}[a.pos]??9) - ({QB:0,RB:1,WR:2,TE:3}[b.pos]??9))
                        .map(p=>`${p.pos} ${p.name}`).join(' · ');
     return `<div class="stack ${isQbStack?'qb-stack':''}">
-      <div class="stk-head">${team} <span style="color:var(--dim);font-size:11px">${arr.length} picks</span> <span class="stk-tag">${tag}</span></div>
+      <div class="stk-head">${team} ${envChip(envOf(arr[0]), true)} <span style="color:var(--dim);font-size:11px">${arr.length} picks</span> <span class="stk-tag">${tag}</span></div>
       <div class="stk-players">${players}</div>
     </div>`;
   }).join('');
@@ -1109,7 +1175,7 @@ function renderBestStacking(){
     const title = `pairs with ${s.anchor.pos} ${s.anchor.name} on ${s.team}`;
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''}</div></span>
+      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''} ${envChip(envOf(p), true)}</div></span>
       <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
     </div>`;
   }).join('');
@@ -1160,8 +1226,10 @@ function computeValueStacks(){
     const proj = qb.proj + primary.proj;
     const value = cost > 0 ? proj / cost : 0;
 
+    const env = envOf(qb);
     return {
-      qb, primary, secondary,
+      qb, primary, secondary, env,
+      envRank: env ? env.rank : 9999,
       qbName:      qb.name,
       primaryName: primary.name,
       cost: Math.round(cost),
@@ -1181,7 +1249,7 @@ function renderValueStacks(){
   });
   const body = document.getElementById('vsbody');
   if(stacks.length === 0){
-    body.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">No QBs with projections in the current pool.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">No QBs with projections in the current pool.</td></tr>`;
     return;
   }
   body.innerHTML = stacks.map(s => `
@@ -1199,6 +1267,7 @@ function renderValueStacks(){
       <td class="num">${s.gap}</td>
       <td class="num">${s.proj}</td>
       <td class="num"><span class="val">${s.value.toFixed(2)}</span></td>
+      <td class="num">${s.env ? envChip(s.env) : '<span style="color:var(--dim)">—</span>'}</td>
     </tr>
   `).join('');
 }
@@ -1331,7 +1400,7 @@ function renderPortfolio(){
       const pct = (s.rate*100).toFixed(0);
       return `<div class="prow">
         <span style="font-family:var(--disp);font-weight:600;font-size:11px;color:var(--muted)">${s.qb.team}</span>
-        <span><span class="nm">${s.qb.name} + ${s.catcher.name}</span><div class="meta">${s.qb.pos} + ${s.catcher.pos}</div></span>
+        <span><span class="nm">${s.qb.name} + ${s.catcher.name}</span><div class="meta">${s.qb.pos} + ${s.catcher.pos} ${envChip(envOf(s.qb), true)}</div></span>
         <span class="count">${s.count}</span>
         <span class="rate">${pct}%</span>
       </div>`;
@@ -1887,7 +1956,11 @@ async function renderInjuryTicker(){
 // Load data
 (async()=>{
   try{
-    BESTBALL = await (await fetch(DATA_URL, {cache:'no-store'})).json();
+    const [bb] = await Promise.all([
+      (await fetch(DATA_URL, {cache:'no-store'})).json(),
+      loadEnv(),
+    ]);
+    BESTBALL = bb;
     deriveRanks();
   }catch(e){
     BESTBALL = {players:[], count:0, updated:""};

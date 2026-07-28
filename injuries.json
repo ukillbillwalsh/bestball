@@ -1,7 +1,25 @@
 {
- "as_of": "2026-07-24T05:30:15",
+ "as_of": "2026-07-28T06:55:02",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Jayvan Boggs",
+   "pos": "",
+   "team": "Florida State",
+   "injury": "Undisclosed",
+   "date": "July 27, 2026",
+   "headline": "Limited status to remain",
+   "in_pool": true
+  },
+  {
+   "player": "Will Hammond",
+   "pos": "",
+   "team": "Texas Tech",
+   "injury": "Knee",
+   "date": "July 24, 2026",
+   "headline": "Officially named starter for 2026",
+   "in_pool": true
+  },
   {
    "player": "Quincy Porter",
    "pos": "",
