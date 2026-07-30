@@ -412,6 +412,7 @@
         <button class="chip" id="dcsvbtn" title="Download the current view as CSV">↓ CSV</button>
         <div class="spacer"></div>
         <button class="chip" id="syncbtn" title="Bulk-mark drafted players from your Underdog draft tab">Sync Drafted</button>
+        <button class="chip" id="extbtn" title="Overlay this companion directly on the Underdog draft page">Chrome Extension</button>
         <button class="chip" id="savedraft" title="Snapshot your current roster to your Portfolio">Save Draft</button>
         <button class="chip reset-btn" id="resetdraft">Reset draft</button>
       </div>
@@ -558,6 +559,35 @@
     </div>
 
     <div class="sync-result" id="syncResult"></div>
+  </div>
+</div>
+
+<!-- Chrome Extension modal -->
+<div id="extModal" class="sync-modal" style="display:none">
+  <div class="sync-overlay" id="extOverlay"></div>
+  <div class="sync-box">
+    <h3>Underdog Overlay &middot; Chrome Extension</h3>
+    <p class="dnote">Overlays this companion <b>directly on the Underdog draft page</b>, auto-synced to your picks as they happen &mdash; no second tab, no bookmarklet, no paste. v2.22.1</p>
+
+    <div class="sync-bookmarklet-wrap">
+      <a class="bookmarklet-link" href="./cfb-underdog-sync.zip" download>&#11015; Download extension (.zip)</a>
+      <span class="dnote">~40 KB &middot; runs only on underdogsports.com</span>
+    </div>
+
+    <div class="dnote" style="margin-bottom:4px"><b>Install (one-time, ~1 minute):</b></div>
+    <div class="dnote" style="margin-bottom:14px;line-height:1.9">
+      <b>1.</b> Unzip the download somewhere permanent (e.g. <b>Documents\cfb-underdog-sync</b>). Chrome loads the extension from this folder, so don&rsquo;t delete or move it afterwards.<br>
+      <b>2.</b> In Chrome, open <b>chrome://extensions</b> (copy that into the address bar).<br>
+      <b>3.</b> Turn on <b>Developer mode</b> &mdash; the toggle in the top-right corner.<br>
+      <b>4.</b> Click <b>Load unpacked</b> and select the unzipped folder (the one containing <b>manifest.json</b>).<br>
+      <b>5.</b> Open any Underdog draft room &mdash; the companion panel appears automatically and marks your picks as they&rsquo;re made.
+    </div>
+
+    <div class="dnote" style="margin-bottom:14px"><b>Updating:</b> when a new version is posted here, download the new zip, replace the contents of that same folder, then hit the &#8635; refresh icon on the extension&rsquo;s card at chrome://extensions.<br><br><b>Note:</b> Chrome may show &ldquo;unpacked extension&rdquo; warnings on startup &mdash; that&rsquo;s normal for extensions installed outside the Web Store. The extension only touches underdogsports.com and this site&rsquo;s data feed.</div>
+
+    <div class="sync-actions">
+      <button class="chip" id="extClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1843,6 +1873,10 @@ function syncApplyDrafted(){
   resultEl.innerHTML = html;
 }
 
+const extModal=document.getElementById('extModal');
+document.getElementById('extbtn').onclick = ()=>{ extModal.style.display='flex'; };
+document.getElementById('extClose').onclick = ()=>{ extModal.style.display='none'; };
+document.getElementById('extOverlay').onclick = ()=>{ extModal.style.display='none'; };
 document.getElementById('syncbtn').onclick = openSyncModal;
 document.getElementById('syncCancel').onclick = closeSyncModal;
 document.getElementById('syncOverlay').onclick = closeSyncModal;
@@ -1852,6 +1886,9 @@ document.getElementById('syncApply').onclick = syncApplyDrafted;
 document.addEventListener('keydown', e=>{
   if(e.key === 'Escape' && document.getElementById('syncModal').style.display !== 'none'){
     closeSyncModal();
+  }
+  if(e.key === 'Escape' && extModal.style.display !== 'none'){
+    extModal.style.display='none';
   }
 });
 
