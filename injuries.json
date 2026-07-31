@@ -1,7 +1,16 @@
 {
- "as_of": "2026-07-29T19:38:29",
+ "as_of": "2026-07-31T14:32:05",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Jordan Washington",
+   "pos": "",
+   "team": "Washington",
+   "injury": "Neck",
+   "date": "July 30, 2026",
+   "headline": "Expected to miss 2026 season",
+   "in_pool": true
+  },
   {
    "player": "Gideon Ituka",
    "pos": "",
@@ -90,24 +99,6 @@
    "injury": "Lower Leg",
    "date": "July 16, 2026",
    "headline": "Possible return in October",
-   "in_pool": true
-  },
-  {
-   "player": "Mekhi Nelson",
-   "pos": "",
-   "team": "Nebraska",
-   "injury": "Not Injury Related",
-   "date": "July 16, 2026",
-   "headline": "Not facing charges",
-   "in_pool": true
-  },
-  {
-   "player": "Kaelan Chudzinski",
-   "pos": "",
-   "team": "Boston College",
-   "injury": "Achilles",
-   "date": "July 16, 2026",
-   "headline": "Expected to miss season",
    "in_pool": true
   }
  ]
