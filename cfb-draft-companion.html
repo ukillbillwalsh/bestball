@@ -348,6 +348,14 @@
     border-left:1px solid var(--line); background:var(--bg2);
   }
   @media(max-width:760px){ .injury-ticker__asof{display:none} }
+  /* Extension version notice: tiny date badge on the toolbar chip, plus a
+     highlighted version box in the modal.  Both are populated from the single
+     EXT_VERSION constant in the page script, so a release bump is one edit. */
+  .extchipdate{font-family:var(--mono);font-size:9px;color:var(--accent2);background:rgba(255,176,31,.14);padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:.5px;vertical-align:1px}
+  .ext-version{display:flex;align-items:center;gap:12px;background:rgba(255,90,31,.07);border:1px solid rgba(255,90,31,.35);border-radius:8px;padding:10px 14px;margin:10px 0 4px}
+  .ext-version .evtag{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
+  .ext-version .evdate{font-family:var(--mono);font-size:11px;color:var(--ink)}
+  .ext-version .evnotes{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -412,7 +420,7 @@
         <button class="chip" id="dcsvbtn" title="Download the current view as CSV">↓ CSV</button>
         <div class="spacer"></div>
         <button class="chip" id="syncbtn" title="Bulk-mark drafted players from your Underdog draft tab">Sync Drafted</button>
-        <button class="chip" id="extbtn" title="Overlay this companion directly on the Underdog draft page">Chrome Extension</button>
+        <button class="chip" id="extbtn" title="Overlay this companion directly on the Underdog draft page">Chrome Extension<span class="extchipdate" id="extChipDate"></span></button>
         <button class="chip" id="savedraft" title="Snapshot your current roster to your Portfolio">Save Draft</button>
         <button class="chip reset-btn" id="resetdraft">Reset draft</button>
       </div>
@@ -567,7 +575,15 @@
   <div class="sync-overlay" id="extOverlay"></div>
   <div class="sync-box">
     <h3>Underdog Overlay &middot; Chrome Extension</h3>
-    <p class="dnote">Overlays this companion <b>directly on the Underdog draft page</b>, auto-synced to your picks as they happen &mdash; no second tab, no bookmarklet, no paste. v2.22.1</p>
+    <p class="dnote">Overlays this companion <b>directly on the Underdog draft page</b>, auto-synced to your picks as they happen &mdash; no second tab, no bookmarklet, no paste.</p>
+
+    <div class="ext-version">
+      <span class="evtag" id="extVerTag"></span>
+      <div>
+        <div class="evdate">posted <b id="extVerDate"></b></div>
+        <div class="evnotes" id="extVerNotes"></div>
+      </div>
+    </div>
 
     <div class="sync-bookmarklet-wrap">
       <a class="bookmarklet-link" href="./cfb-underdog-sync.zip" download>&#11015; Download extension (.zip)</a>
@@ -583,7 +599,16 @@
       <b>5.</b> Open any Underdog draft room &mdash; the companion panel appears automatically and marks your picks as they&rsquo;re made.
     </div>
 
-    <div class="dnote" style="margin-bottom:14px"><b>Updating:</b> when a new version is posted here, download the new zip, replace the contents of that same folder, then hit the &#8635; refresh icon on the extension&rsquo;s card at chrome://extensions.<br><br><b>Note:</b> Chrome may show &ldquo;unpacked extension&rdquo; warnings on startup &mdash; that&rsquo;s normal for extensions installed outside the Web Store. The extension only touches underdogsports.com and this site&rsquo;s data feed.</div>
+    <div class="dnote" style="margin-bottom:4px"><b>Upgrading to a new version (~30 seconds):</b></div>
+    <div class="dnote" style="margin-bottom:14px;line-height:1.9">
+      A new release is posted right here &mdash; when the version and date in the orange box above are newer than what chrome://extensions shows on the extension&rsquo;s card, you&rsquo;re due for an upgrade.<br>
+      <b>1.</b> Download the new zip from the button above.<br>
+      <b>2.</b> Unzip it and replace the contents of your <b>existing</b> extension folder &mdash; the same folder you originally loaded, not a new one. Overwrite everything when asked.<br>
+      <b>3.</b> Go to <b>chrome://extensions</b> and click the &#8635; refresh icon on the extension&rsquo;s card. The version number on the card should now match the box above.<br>
+      <b>4.</b> Reload any Underdog draft tab you have open so the new panel loads.
+    </div>
+
+    <div class="dnote" style="margin-bottom:14px"><b>Note:</b> Chrome may show &ldquo;unpacked extension&rdquo; warnings on startup &mdash; that&rsquo;s normal for extensions installed outside the Web Store. The extension only touches underdogsports.com and this site&rsquo;s data feed.</div>
 
     <div class="sync-actions">
       <button class="chip" id="extClose">Close</button>
@@ -1874,6 +1899,27 @@ function syncApplyDrafted(){
 }
 
 const extModal=document.getElementById('extModal');
+
+// ===== Extension version notice =====
+// Single source of truth for the downloadable extension's version.  Bump
+// these three values with each release; the toolbar chip badge and the
+// modal's version box both read from here.
+const EXT_VERSION = {
+  v:     '2.23.0',
+  date:  'July 30, 2026',
+  notes: 'Auto-resets between drafts · slimmer compact panel · QB stacks moved to Stacking Partners · minimal bye counter + best available on the board',
+};
+(function renderExtVersion(){
+  const tag   = document.getElementById('extVerTag');
+  const date  = document.getElementById('extVerDate');
+  const notes = document.getElementById('extVerNotes');
+  const chip  = document.getElementById('extChipDate');
+  if(tag)   tag.textContent   = 'v' + EXT_VERSION.v;
+  if(date)  date.textContent  = EXT_VERSION.date;
+  if(notes) notes.textContent = EXT_VERSION.notes;
+  if(chip)  chip.textContent  = 'v' + EXT_VERSION.v + ' · ' + EXT_VERSION.date.replace(/^(\w{3})\w*\s+(\d+).*$/, '$1 $2');
+})();
+
 document.getElementById('extbtn').onclick = ()=>{ extModal.style.display='flex'; };
 document.getElementById('extClose').onclick = ()=>{ extModal.style.display='none'; };
 document.getElementById('extOverlay').onclick = ()=>{ extModal.style.display='none'; };
