@@ -567,6 +567,33 @@
   }
   .footnote{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:20px;line-height:1.7}
   @media(max-width:900px){.optlayout{grid-template-columns:1fr}.lbody{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- Market tab ---- */
+.mkcard{background:var(--card,#141a22);border:1px solid var(--line,#232b36);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.mkhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.mkmatch{font-weight:700;font-size:15px}
+.mktime{color:var(--muted,#8b98a9);font-size:12px}
+.mkflag{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:999px;border:1px solid}
+.mkflag.steam{color:#ffb454;border-color:#ffb45455;background:#ffb45412}
+.mkflag.steamdn{color:#7fb5ff;border-color:#7fb5ff55;background:#7fb5ff12}
+.mkflag.split{color:#c792ea;border-color:#c792ea55;background:#c792ea12}
+.mkrows{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+@media(max-width:720px){.mkrows{grid-template-columns:1fr}}
+.mkline{display:flex;align-items:baseline;gap:8px;font-size:13.5px}
+.mklab{color:var(--muted,#8b98a9);font-size:11px;letter-spacing:.5px;min-width:52px}
+.mkmove{font-weight:700}
+.mkup{color:#69d58c}.mkdn{color:#ff7a7a}.mkflat{color:var(--muted,#8b98a9)}
+.mkarrow{font-size:12px}
+.mkimp{display:flex;gap:18px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line,#232b36);flex-wrap:wrap}
+.mkteam{display:flex;flex-direction:column;gap:2px;min-width:150px}
+.mktname{font-weight:700;font-size:13px}
+.mktt{font-size:13px}
+.mktrend{color:var(--muted,#8b98a9);font-size:11.5px}
+.mkverdict{margin-top:8px;font-size:12.5px;background:#ffffff08;border-radius:8px;padding:6px 10px}
+.mksortbar{display:flex;gap:8px;margin:2px 0 12px;align-items:center}
+.mksort{cursor:pointer;font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line,#232b36);color:var(--muted,#8b98a9)}
+.mksort.on{color:#fff;border-color:#4a9eff88;background:#4a9eff18}
+
 </style>
 </head>
 <body>
@@ -599,6 +626,7 @@
     <button data-view="cores">Cores<span class="tg">who the pros are playing</span></button>
     <button data-view="stats">Player Stats<span class="tg">QB · RB · WR profiles</span></button>
     <button data-view="props">Props<span class="tg">underdog · lines</span></button>
+    <button data-view="market">Market<span class="tg">line moves · steam · trends</span></button>
   </nav>
 </header>
 
@@ -893,6 +921,16 @@
     </div>
     <p class="footnote">Underdog pickem lines with hit-rate history from CFBD game logs. L5 / L10 count games where the player cleared today's line; L10 Avg colors green when the average sits above the line, red below. The bars chart the last 10 games against the line (green over, red under, oldest to newest). Matchup is the same 1-10 defense-vs-position grade as the Matchup Chart, joined for players on this week's slate. History spans the player's last two seasons until 2026 games accumulate.</p>
   </section>
+
+<section class="view" id="view-market">
+  <div class="mksortbar">
+    <span class="mksort on" data-s="total" onclick="setMkSort('total')">Sort: total moves</span>
+    <span class="mksort" data-s="spread" onclick="setMkSort('spread')">Sort: spread moves</span>
+    <span class="mktrend" id="mktupd" style="margin-left:auto"></span>
+  </div>
+  <div id="mktcards"></div>
+  <p class="footnote">Lines: DraftKings book preferred, consensus fallback · open → current from CFBD · STEAM = spread moved ≥2 or total ≥3 · implied team totals from spread + total · trends = season ATS / over-under vs closing lines · the market read flags when the money is against a side — "run and hide".</p>
+</section>
 </main>
 
 <script>
@@ -2467,6 +2505,7 @@ async function loadData(){
   if(!proj){ proj = SAMPLE; }            // dev fallback so the file renders when opened directly
   applyData(proj, odds);
   applyProps(pr);
+  loadMarket();
 }
 
 // Re-pull live odds on the same cadence shown in the header (90s), without touching projections.
@@ -2476,9 +2515,93 @@ function startOddsRefresh(){
       const odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json();
       const proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json();
       applyData(proj, odds);
+      loadMarket();
     }catch(e){/* keep last good render */}
   }, 90000);
 }
+
+
+/* ---------------- Market tab (line movement · steam · trends) ---------------- */
+const MARKET_SAMPLE = {"updated": "2026-09-26T06:15:00-05:00", "season": 2026, "thresholds": {"spreadSteam": 2.0, "totalSteam": 3.0, "booksSplit": 2.5}, "games": [{"away": "UGA", "home": "ALA", "time": "2026-09-26T19:30:00.000Z", "spread": {"open": -1.5, "cur": -4.5, "move": -3.0, "d1": -1.0, "fav": "ALA", "toward": "ALA"}, "total": {"open": 48.5, "cur": 52.5, "move": 4.0, "d1": 1.5}, "implied": {"UGA": {"open": 23.5, "cur": 24.0, "move": 0.5}, "ALA": {"open": 25.0, "cur": 28.5, "move": 3.5}}, "books": {"n": 6, "disagree": 1.0}, "flags": [{"k": "SPREAD STEAM", "team": "ALA", "amt": 3.0}, {"k": "TOTAL STEAM", "dir": "up", "amt": 4.0}]}, {"away": "TEX", "home": "OU", "time": "2026-09-26T15:30:00.000Z", "spread": {"open": -6.5, "cur": -3.5, "move": 3.0, "d1": 0.5, "fav": "OU", "toward": "TEX"}, "total": {"open": 61.5, "cur": 57.5, "move": -4.0, "d1": -2.0}, "implied": {"TEX": {"open": 27.5, "cur": 27.0, "move": -0.5}, "OU": {"open": 34.0, "cur": 30.5, "move": -3.5}}, "books": {"n": 5, "disagree": 3.0}, "flags": [{"k": "SPREAD STEAM", "team": "TEX", "amt": 3.0}, {"k": "TOTAL STEAM", "dir": "down", "amt": 4.0}, {"k": "BOOKS SPLIT", "amt": 3.0}]}, {"away": "ARMY", "home": "NAVY", "time": "2026-09-26T12:00:00.000Z", "spread": {"open": 2.5, "cur": 2.5, "move": 0.0, "d1": 0.0, "fav": "ARMY", "toward": null}, "total": {"open": 41.5, "cur": 42.5, "move": 1.0, "d1": 0.5}, "implied": {"ARMY": {"open": 22.0, "cur": 22.5, "move": 0.5}, "NAVY": {"open": 19.5, "cur": 20.0, "move": 0.5}}, "books": {"n": 4, "disagree": 0.5}, "flags": []}], "trends": {"UGA": {"ats": "3-1", "atsPct": 75, "ou": "2-2", "ouPct": 50, "covMargin": 4.2, "l5Ats": "W-W-L-W"}, "ALA": {"ats": "2-2", "atsPct": 50, "ou": "3-1", "ouPct": 75, "covMargin": -0.5, "l5Ats": "L-W-W-L"}, "TEX": {"ats": "4-0", "atsPct": 100, "ou": "1-3", "ouPct": 25, "covMargin": 7.8, "l5Ats": "W-W-W-W"}, "OU": {"ats": "1-3", "atsPct": 25, "ou": "2-2", "ouPct": 50, "covMargin": -5.1, "l5Ats": "L-L-W-L"}, "ARMY": {"ats": "3-1", "atsPct": 75, "ou": "0-4", "ouPct": 0, "covMargin": 3.0, "l5Ats": "W-L-W-W"}, "NAVY": {"ats": "2-2", "atsPct": 50, "ou": "1-3", "ouPct": 25, "covMargin": 0.8, "l5Ats": "W-L-L-W"}}};
+let MARKET=null, mkSort='total';
+async function loadMarket(){
+  try{ MARKET = await (await fetch(DATA_BASE+'market.json',{cache:'no-store'})).json(); }
+  catch(e){ MARKET = MARKET_SAMPLE; }
+  renderMarket();
+}
+function mkMoveTxt(m){ if(m===null||m===undefined) return ['—','mkflat'];
+  if(Math.abs(m)<0.05) return ['no move','mkflat'];
+  return [(m>0?'▲':'▼')+Math.abs(m).toFixed(1), m>0?'mkup':'mkdn']; }
+function mkSpreadTxt(g){ const s=g.spread; if(s.cur===null||s.cur===undefined) return '—';
+  const f=s.cur<0? g.home:g.away; const line=Math.abs(s.cur).toFixed(1);
+  const o=(s.open!==null&&s.open!==undefined)? (s.open<0? g.home:g.away)+' -'+Math.abs(s.open).toFixed(1) : '—';
+  return o+' → '+f+' -'+line; }
+function mkVerdict(g){
+  const bits=[];
+  if(g.spread.toward && g.spread.move!==null && Math.abs(g.spread.move)>=1)
+    bits.push('sharp side: '+g.spread.toward+' (spread moved '+Math.abs(g.spread.move).toFixed(1)+' toward them)');
+  const tm=g.total.move;
+  if(tm!==null && tm!==undefined && Math.abs(tm)>=2)
+    bits.push(tm>0? 'total climbing '+tm.toFixed(1)+' — environment improving'
+                  : 'total falling '+Math.abs(tm).toFixed(1)+' — scoring expectations down');
+  for(const [ab,imp] of Object.entries(g.implied||{})){
+    if(imp.move!==null && imp.move!==undefined && imp.move<=-3) bits.push(ab+' implied total down '+Math.abs(imp.move).toFixed(1)+' — market against them, caution');
+    if(imp.move!==null && imp.move!==undefined && imp.move>=3) bits.push(ab+' implied total up '+imp.move.toFixed(1)+' — market backing their offense');
+  }
+  if(g.books && g.books.disagree>=((MARKET&&MARKET.thresholds&&MARKET.thresholds.booksSplit)||2.5))
+    bits.push('books disagree by '+g.books.disagree.toFixed(1)+' — unsettled number');
+  return bits.length? 'Market read: '+bits.join(' · ') : 'Market read: quiet — no meaningful movement';
+}
+function mkTrendLine(ab){
+  const t=MARKET&&MARKET.trends? MARKET.trends[ab]:null; if(!t) return 'no trend data';
+  const parts=['ATS '+t.ats+' ('+t.atsPct+'%)','O/U '+t.ou];
+  if(t.covMargin!==null&&t.covMargin!==undefined) parts.push('cover '+(t.covMargin>0?'+':'')+t.covMargin.toFixed(1));
+  if(t.l5Ats) parts.push('L5 '+t.l5Ats);
+  return parts.join(' · ');
+}
+function renderMarket(){
+  const host=document.getElementById('mktcards'); if(!host) return;
+  if(!MARKET||!MARKET.games||!MARKET.games.length){
+    host.innerHTML='<div class="mkcard">No market data yet — lines post Sunday–Monday; fetch_market.py fills this on the 6 AM run.</div>';return;}
+  const upd=document.getElementById('mktupd');
+  if(upd) upd.textContent='updated '+(MARKET.updated||'').replace('T',' ').slice(0,16);
+  const games=[...MARKET.games];
+  games.sort((a,b)=> mkSort==='total'
+    ? Math.abs(b.total.move||0)-Math.abs(a.total.move||0)
+    : Math.abs(b.spread.move||0)-Math.abs(a.spread.move||0));
+  host.innerHTML=games.map(g=>{
+    const flags=(g.flags||[]).map(f=>{
+      if(f.k==='SPREAD STEAM') return '<span class="mkflag steam">STEAM → '+f.team+'</span>';
+      if(f.k==='TOTAL STEAM') return '<span class="mkflag '+(f.dir==='up'?'steam':'steamdn')+'">TOTAL '+(f.dir==='up'?'▲':'▼')+f.amt.toFixed(1)+'</span>';
+      return '<span class="mkflag split">BOOKS SPLIT '+f.amt.toFixed(1)+'</span>';}).join(' ');
+    const [smTxt,smCls]=mkMoveTxt(g.spread.move);
+    const [tmTxt,tmCls]=mkMoveTxt(g.total.move);
+    const d1=(g.total.d1!==null&&g.total.d1!==undefined&&Math.abs(g.total.d1)>=0.5)
+      ? ' <span class="mktrend">(24h '+(g.total.d1>0?'+':'')+g.total.d1.toFixed(1)+')</span>':'';
+    const imps=Object.entries(g.implied||{}).map(([ab,imp])=>{
+      const [t,c]=mkMoveTxt(imp.move);
+      return '<div class="mkteam"><span class="mktname">'+ab+'</span>'+
+        '<span class="mktt">implied '+(imp.cur!==null&&imp.cur!==undefined?imp.cur.toFixed(1):'—')+
+        ' <span class="'+c+' mkmove mkarrow">'+t+'</span></span>'+
+        '<span class="mktrend">'+mkTrendLine(ab)+'</span></div>';}).join('');
+    const time=g.time? new Date(g.time).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}):'';
+    return '<div class="mkcard">'+
+      '<div class="mkhead"><span class="mkmatch">'+g.away+' @ '+g.home+'</span>'+
+      '<span class="mktime">'+time+'</span>'+flags+'</div>'+
+      '<div class="mkrows">'+
+      '<div class="mkline"><span class="mklab">SPREAD</span><span>'+mkSpreadTxt(g)+'</span>'+
+      '<span class="mkmove '+smCls+'">'+smTxt+'</span></div>'+
+      '<div class="mkline"><span class="mklab">TOTAL</span><span>'+
+      (g.total.open!==null&&g.total.open!==undefined?g.total.open.toFixed(1):'—')+' → '+
+      (g.total.cur!==null&&g.total.cur!==undefined?g.total.cur.toFixed(1):'—')+'</span>'+
+      '<span class="mkmove '+tmCls+'">'+tmTxt+'</span>'+d1+'</div>'+
+      '</div><div class="mkimp">'+imps+'</div>'+
+      '<div class="mkverdict">'+mkVerdict(g)+'</div></div>';
+  }).join('');
+}
+function setMkSort(s){ mkSort=s;
+  document.querySelectorAll('.mksort').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+  renderMarket(); }
 
 // Data location — web uses relative paths; the native app overrides via window.HUB_DATA_BASE
 const DATA_BASE = (typeof window!=='undefined' && window.HUB_DATA_BASE) || './';
