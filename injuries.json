@@ -1,7 +1,52 @@
 {
- "as_of": "2026-07-31T14:44:11",
+ "as_of": "2026-08-02T10:04:40",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Roderick Tezeno Jr.",
+   "pos": "",
+   "team": "USC",
+   "injury": "Foot",
+   "date": "August 1, 2026",
+   "headline": "Undergoes foot procedure",
+   "in_pool": true
+  },
+  {
+   "player": "Tanook Hines",
+   "pos": "",
+   "team": "USC",
+   "injury": "Undisclosed",
+   "date": "August 1, 2026",
+   "headline": "Still limited but progressing",
+   "in_pool": true
+  },
+  {
+   "player": "Xavier Brown",
+   "pos": "",
+   "team": "Virginia",
+   "injury": "Foot",
+   "date": "August 1, 2026",
+   "headline": "Participating in drills",
+   "in_pool": true
+  },
+  {
+   "player": "Dillon Newton-Short",
+   "pos": "",
+   "team": "Virginia",
+   "injury": "Undisclosed",
+   "date": "August 1, 2026",
+   "headline": "Does not practice Friday",
+   "in_pool": true
+  },
+  {
+   "player": "Jordan Dwyer",
+   "pos": "",
+   "team": "TCU",
+   "injury": "Foot",
+   "date": "July 31, 2026",
+   "headline": "Back in practice",
+   "in_pool": true
+  },
   {
    "player": "Jordan Washington",
    "pos": "",
@@ -81,24 +126,6 @@
    "injury": "Leg",
    "date": "July 20, 2026",
    "headline": "Chance to return early in 2026",
-   "in_pool": true
-  },
-  {
-   "player": "Walker Eget",
-   "pos": "",
-   "team": "Duke",
-   "injury": "Leg",
-   "date": "July 17, 2026",
-   "headline": "Probable for fall practice",
-   "in_pool": true
-  },
-  {
-   "player": "Calvin Russell",
-   "pos": "",
-   "team": "Syracuse",
-   "injury": "Lower Leg",
-   "date": "July 16, 2026",
-   "headline": "Possible return in October",
    "in_pool": true
   }
  ]
