@@ -680,10 +680,21 @@ function envChip(e, sm){
   return `<span class="envchip ${cls}${sm?' sm':''}" title="${envTip(e)}">ENV #${e.rank}</span>`;
 }
 
-// BYE_WEEKS is baked in by bake_bye_weeks.py.  Keys are team abbreviations
-// matching the `team` field in bestball.json.  If non-empty, it overrides
-// whatever bye each player has in bestball.json.  Empty = use bestball.json's.
-const BYE_WEEKS = {};
+// BYE_WEEKS overrides bestball.json byes.  Keys are team abbreviations
+// matching the `team` field in bestball.json, OR full team names (checked
+// first — the pipeline truncates e.g. "North Carolina State Wolfpack" to
+// "NORTH", which collides with three other programs).  Week 0 teams play
+// Aug 29 and get TWO byes.  Verified against official 2026 schedule
+// releases (Jan-May 2026).
+const BYE_WEEKS = {
+  'UNC':  [1, 4],   // W0 vs TCU (Dublin); open Sep 5 + Sep 26
+  'TCU':  [1, 6],   // W0 vs UNC (Dublin); open Sep 5 + Oct 10
+  'USC':  [7, 10],  // W0 vs SJSU; open Oct 17 + Nov 7
+  'UVA':  [1, 10],  // W0 vs NC State (Brazil); open Sep 5 + Nov 7
+  'STAN': [2, 10],  // W0 vs Hawaii; open Sep 12 + Nov 7
+  'FSU':  [2, 8],   // W0 vs New Mexico State; open Sep 12 + Oct 24
+  'North Carolina State Wolfpack': [1, 7],  // W0 vs UVA (Brazil); open Sep 5 + Oct 17
+};
 
 // Return a player's bye weeks as an array (most teams 1, Week 0 teams 2).
 // Works whether the player carries `byes` (new), a single `bye`, or nothing.
@@ -697,11 +708,48 @@ function byesOf(p){
 // matching the `team` field in bestball.json; values are ESPN CDN URLs.
 const TEAM_LOGOS = {};
 
-function teamLogo(team, sm){
-  if(!team || !TEAM_LOGOS[team]) return '';
+// Manual fixes checked BEFORE TEAM_LOGOS.  Two problems in the pipeline map:
+// (1) several teams are missing entirely (keyed by abbreviation below), and
+// (2) 5-letter truncation collisions — "NORTH" covers NC State AND North
+// Dakota State AND two more programs, so one abbrev-keyed logo can't be right
+// (keyed by teamFull below, which is collision-proof).
+const ESPN_LOGO = id => `https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${id}.png`;
+const LOGO_FIXES = {
+  // Missing from the pipeline map
+  'WSH':  ESPN_LOGO(264),   // Washington Huskies
+  'TAMU': ESPN_LOGO(245),   // Texas A&M Aggies
+  'UF':   ESPN_LOGO(57),    // Florida Gators
+  'IND':  ESPN_LOGO(84),    // Indiana Hoosiers
+  'SCAR': ESPN_LOGO(2579),  // South Carolina Gamecocks
+  'NW':   ESPN_LOGO(77),    // Northwestern Wildcats
+  // Truncation collisions / wrong logos, keyed by full name
+  'North Carolina State Wolfpack': ESPN_LOGO(152),
+  'North Dakota State Bison':      ESPN_LOGO(2449),
+  'South Dakota State Jackrabbits':ESPN_LOGO(2571),
+  'Florida Atlantic Owls':         ESPN_LOGO(2226),
+  'Indiana State Sycamores':       ESPN_LOGO(282),
+  'Texas State Bobcats':           ESPN_LOGO(326),
+};
+// Abbreviations shared by multiple programs: never trust the abbrev-keyed
+// pipeline logo for these — resolve by full name or show nothing, since no
+// logo beats the wrong team's logo.
+const AMBIGUOUS_TEAM_ABBRS = new Set(['NORTH','SOUTH']);
+
+// Accepts a player object (preferred — enables full-name resolution) or a
+// bare abbreviation string for older call sites.
+function teamLogo(pOrTeam, sm){
+  const isObj = !!pOrTeam && typeof pOrTeam === 'object';
+  const team  = isObj ? pOrTeam.team : pOrTeam;
+  const full  = isObj ? pOrTeam.teamFull : null;
+  let url = (full && LOGO_FIXES[full]) || null;
+  if(!url && team){
+    if(LOGO_FIXES[team]) url = LOGO_FIXES[team];
+    else if(!AMBIGUOUS_TEAM_ABBRS.has(team)) url = TEAM_LOGOS[team];
+  }
+  if(!url) return '';
   const cls = sm ? 'team-logo sm' : 'team-logo';
   // onerror hides broken/missing logos gracefully; loading=lazy defers offscreen loads
-  return `<img src="${TEAM_LOGOS[team]}" class="${cls}" alt="${team}" loading="lazy" onerror="this.style.display='none'">`;
+  return `<img src="${url}" class="${cls}" alt="${team}" loading="lazy" onerror="this.style.display='none'">`;
 }
 
 let BESTBALL = {players:[], updated:"", count:0};
@@ -867,7 +915,7 @@ function render(){
       <td><button class="star-btn ${starOn}" data-star="${p.id}" title="Mark as mine">★</button></td>
       <td><button class="draft-btn ${dOn}" data-draft="${p.id}" title="Mark drafted">${dSym}</button></td>
       <td class="adp-cell">${p.adp==null?'—':p.adp}</td>
-      <td class="l">${teamLogo(p.team)}<span class="pname-d">${p.name}</span></td>
+      <td class="l">${teamLogo(p)}<span class="pname-d">${p.name}</span></td>
       <td><span class="posbadge pos-${p.pos}">${p.pos}</span></td>
       <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${p.team||'—'}</td>
       <td class="num">${p.proj==null?'—':p.proj}</td>
@@ -902,7 +950,7 @@ function renderRoster(){
     ? `<div class="rosterempty">No picks yet.  Tap the ★ on any player to add them.</div>`
     : sorted.map(p=>`<div class="ritem">
         <span class="ri-pos pos-${p.pos}">${p.pos}</span>
-        <span class="ri-name">${teamLogo(p.team, true)}${p.name}</span>
+        <span class="ri-name">${teamLogo(p, true)}${p.name}</span>
         <span class="ri-team">${p.team||''}</span>
         <span class="ri-bye">${byesOf(p).map(w=>'W'+w).join('·')}</span>
       </div>`).join('');
@@ -1031,7 +1079,7 @@ function renderPartners(){
 
     return `<div class="partner-row" data-star="${p.id}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span class="nm">${teamLogo(p.team, true)}${p.name}</span>
+      <span class="nm">${teamLogo(p, true)}${p.name}</span>
       <span class="adp">${rk}</span>
       <span class="bye ${conflict}" title="${byeTitle}">${byeNote}</span>
       ${tag ? `<span class="stk-tag">${tag.toUpperCase()}</span>` : ''}
@@ -1155,7 +1203,7 @@ function renderBestAvailable(){
     const title = c.existingOnBye >= 2 ? `would push your bye cluster to ${c.existingOnBye + 1}` : '';
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${p.team || '—'}</div></span>
+      <span><div class="nm">${teamLogo(p, true)}${p.name}</div><div class="meta">${p.team || '—'}</div></span>
       <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
     </div>`;
   }).join('');
@@ -1230,7 +1278,7 @@ function renderBestStacking(){
     const title = `pairs with ${s.anchor.pos} ${s.anchor.name} on ${s.team}`;
     return `<div class="sugrow" data-star="${p.id}" title="${title}">
       <span class="posbadge pos-${p.pos}">${p.pos}</span>
-      <span><div class="nm">${teamLogo(p.team, true)}${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''} ${envChip(envOf(p), true)}</div></span>
+      <span><div class="nm">${teamLogo(p, true)}${p.name}</div><div class="meta">${s.team}${s.tag ? ' · ' + s.tag.toUpperCase() : ''} ${envChip(envOf(p), true)}</div></span>
       <span class="rk">${rk}<span class="bye ${conflict}">${byeNote}</span></span>
     </div>`;
   }).join('');
@@ -1310,11 +1358,11 @@ function renderValueStacks(){
   body.innerHTML = stacks.map(s => `
     <tr>
       <td class="l">
-        <div>${teamLogo(s.qb.team)}<span class="pname-d">${s.qb.name}</span></div>
+        <div>${teamLogo(s.qb)}<span class="pname-d">${s.qb.name}</span></div>
         <div class="meta">${s.qb.team} · ADP ${s.qb.adp.toFixed(1)}</div>
       </td>
       <td class="l">
-        ${teamLogo(s.primary.team)}<span class="posbadge pos-${s.primary.pos}" style="margin-right:6px">${s.primary.pos}</span>
+        ${teamLogo(s.primary)}<span class="posbadge pos-${s.primary.pos}" style="margin-right:6px">${s.primary.pos}</span>
         <span class="pname-d">${s.primary.name}</span>
         <div class="meta">ADP ${s.primary.adp.toFixed(1)}${s.secondary ? ` · also ${s.secondary.name} (ADP ${s.secondary.adp.toFixed(1)})` : ''}</div>
       </td>
@@ -1905,9 +1953,9 @@ const extModal=document.getElementById('extModal');
 // these three values with each release; the toolbar chip badge and the
 // modal's version box both read from here.
 const EXT_VERSION = {
-  v:     '2.23.0',
-  date:  'July 30, 2026',
-  notes: 'Auto-resets between drafts · slimmer compact panel · QB stacks moved to Stacking Partners · minimal bye counter + best available on the board',
+  v:     '2.24.0',
+  date:  'August 2, 2026',
+  notes: 'Fixed missing/wrong team logos (Washington, Texas A&M, Florida, Indiana, NC State, South Carolina, Northwestern) · added second bye weeks for Week 0 teams (UNC, TCU, USC, NC State, Virginia, Stanford, Florida State)',
 };
 (function renderExtVersion(){
   const tag   = document.getElementById('extVerTag');
@@ -2059,9 +2107,11 @@ async function renderInjuryTicker(){
   if (BESTBALL.players){
     BESTBALL.players.forEach(p=>{
       let arr = null;
-      if (p.team && byeKeys.length && BYE_WEEKS[p.team] != null){
-        const v = BYE_WEEKS[p.team];
-        arr = Array.isArray(v) ? v.slice() : [v];
+      const ov = (p.teamFull != null && BYE_WEEKS[p.teamFull] != null) ? BYE_WEEKS[p.teamFull]
+               : (p.team    != null && BYE_WEEKS[p.team]    != null) ? BYE_WEEKS[p.team]
+               : null;
+      if (ov != null){
+        arr = Array.isArray(ov) ? ov.slice() : [ov];
       } else if (Array.isArray(p.byes) && p.byes.length){
         arr = p.byes.slice();
       } else if (p.bye != null){
