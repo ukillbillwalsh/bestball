@@ -442,7 +442,9 @@
   .gx-edge{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;margin-left:auto}
   .gx-pass{border-top:1px dashed rgba(129,149,179,.15);margin-top:4px;padding-top:6px}
   .gx-team{min-width:0}
-  .coresgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .coresgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:1100px){.coresgrid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.coresgrid{grid-template-columns:1fr}}
   .core{background:var(--panel,#111827);border:1px solid rgba(129,149,179,.16);border-radius:12px;overflow:hidden}
   .core-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;border-bottom:1px solid rgba(129,149,179,.14);background:rgba(129,149,179,.04)}
   .core-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:14px;color:#fff;flex-shrink:0}
@@ -1256,7 +1258,13 @@ function coresCanWrite(){
   if(CORES_API.endpoint && CORES_API.useSessionRole) return CORES_CANWRITE;
   return /[?&]admin=1/.test(location.search);
 }
-const CORE_SLOTS=5;
+const CORE_SLOTS=5; // default; overridden per-slate by slotsForSlate()
+function slotsForSlate(label){ return /\bfd\b/i.test(label||'') ? 4 : 5; }
+function buildSlotInputs(n){
+  return Array.from({length:n},(_,i)=>
+    `<div class="cb-slot"><span class="p">P${i+1}</span><input class="cb-inp cb-player" list="cb-players" data-i="${i}" placeholder="player name" style="flex:1"></div>`
+  ).join('');
+}
 const AV_COLORS=['#6c5ce7','#00b894','#0984e3','#e17055','#e84393','#fdcb6e','#00cec9','#d63031','#a29bfe'];
 function avColor(name){let h=0;for(const c of (name||'')) h=(h*31+c.charCodeAt(0))>>>0;return AV_COLORS[h%AV_COLORS.length];}
 function coreInitial(name){return (name||'?').trim().charAt(0).toUpperCase()||'?';}
@@ -1277,7 +1285,7 @@ function renderCores(){
     grid.innerHTML=html; if(isAdmin) wireBuilder(); return;
   }
   html += CORES.map(c=>{
-    const rows=(c.players||[]).slice(0,CORE_SLOTS).map(pn=>{
+    const rows=(c.players||[]).map(pn=>{
       const p=poolByName(pn);
       return `<div class="core-row">
         <span class="core-pos">${p?p.pos:''}</span>
@@ -1302,14 +1310,18 @@ function renderCores(){
   if(isAdmin) wireBuilder();
 }
 function coreBuilderHTML(){
-  const slots=Array.from({length:CORE_SLOTS},(_,i)=>
-    `<div class="cb-slot"><span class="p">P${i+1}</span><input class="cb-inp cb-player" list="cb-players" data-i="${i}" placeholder="player name" style="flex:1"></div>`).join('');
+  const initLabel = SLATES.length ? (SLATES.find(s=>s.id===SLATE_ID)||SLATES[0]).label : '';
+  const initN = slotsForSlate(initLabel);
+  const slateOpts = SLATES.length
+    ? SLATES.map(s=>`<option value="${s.label}"${s.id===SLATE_ID?' selected':''}>${s.label}</option>`).join('')
+    : '<option value="">No slates loaded</option>';
   return `<div class="cb-wrap">
     <div class="cb-row">
-      <input class="cb-inp" id="cb-name" placeholder="your name" style="width:150px">
-      <select class="cb-inp" id="cb-slate" style="width:170px">${SLATES.length?SLATES.map(s=>`<option value="${s.label}"${s.id===SLATE_ID?' selected':''}>${s.label}</option>`).join(''):'<option value="">No slates loaded</option>'}</select>
+      <input class="cb-inp" id="cb-name" placeholder="your name / alias" style="width:150px">
+      <select class="cb-inp" id="cb-slate" style="width:170px">${slateOpts}</select>
+      <span class="core-tag" id="cb-slotcount" style="color:var(--muted)">${initN} players</span>
     </div>
-    <div class="cb-row">${slots}</div>
+    <div class="cb-row" id="cb-slots">${buildSlotInputs(initN)}</div>
     <datalist id="cb-players">${pool.slice().filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.name}">`).join('')}</datalist>
     <div class="cb-row">
       <button class="cb-btn" id="cb-add">Add / update my core</button>
@@ -1320,6 +1332,13 @@ function coreBuilderHTML(){
   </div>`;
 }
 function wireBuilder(){
+  // slate dropdown → update slot count live
+  const slateEl=document.getElementById('cb-slate');
+  if(slateEl&&!slateEl._w){slateEl._w=1;slateEl.onchange=()=>{
+    const n=slotsForSlate(slateEl.value);
+    const sd=document.getElementById('cb-slots'); if(sd) sd.innerHTML=buildSlotInputs(n);
+    const sc=document.getElementById('cb-slotcount'); if(sc) sc.textContent=n+' players';
+  };}
   const add=document.getElementById('cb-add'); if(!add||add._w) return; add._w=1;
   add.onclick=()=>{
     const name=(document.getElementById('cb-name').value||'').trim();
