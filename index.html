@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CFB Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Barlow+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e16;--panel:#131b2b;--line:#23304a;--line2:#2e3e5c;
+    --ink:#e8eef7;--muted:#8195b3;--dim:#5d6f8e;
+    --accent:#ff5a1f;--accent2:#ffb01f;--green:#27d796;--blue:#3d8bff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Barlow Condensed',sans-serif;min-height:100vh}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%,rgba(255,90,31,.10),transparent 60%),
+      radial-gradient(900px 500px at 5% 110%,rgba(61,139,255,.08),transparent 55%),
+      var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;
+  }
+  .mark{
+    width:52px;height:52px;border-radius:14px;
+    background:conic-gradient(from 210deg,var(--accent),var(--accent2),var(--accent));
+    display:grid;place-items:center;font-family:'Oswald',sans-serif;font-weight:700;
+    color:#0a0e16;font-size:24px;box-shadow:0 8px 28px rgba(255,90,31,.35);margin-bottom:20px;
+  }
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:28px;letter-spacing:.5px;text-transform:uppercase;text-align:center}
+  h1 span{color:var(--accent)}
+  .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:6px;text-align:center}
+  .cards{display:flex;flex-wrap:wrap;gap:16px;margin-top:40px;justify-content:center;max-width:680px;width:100%}
+  .card{
+    flex:1;min-width:280px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:28px 24px;text-decoration:none;color:inherit;
+    transition:.18s;position:relative;overflow:hidden;
+  }
+  .card:hover{border-color:var(--line2);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+  .card-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+  .card-title{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .card-desc{font-size:15px;color:var(--muted);line-height:1.5}
+  .card-arrow{position:absolute;bottom:24px;right:24px;font-size:20px;color:var(--line2);transition:.18s}
+  .card:hover .card-arrow{color:var(--accent);transform:translateX(4px)}
+  .card.draft .card-title{color:var(--accent)}
+  .card.hub .card-title{color:var(--blue)}
+</style>
+</head>
+<body>
+  <div class="mark">R</div>
+  <h1>CFB <span>Tools</span></h1>
+  <p class="sub">College Football · DFS &amp; Best Ball</p>
+  <div class="cards">
+    <a href="cfb-draft-companion.html" class="card draft">
+      <div class="card-label">Best Ball</div>
+      <div class="card-title">Draft Companion</div>
+      <div class="card-desc">Live best-ball draft assistant with positional suggestions, stack recommendations, and bye-week tracking.</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a href="cfb-research-hub.html" class="card hub">
+      <div class="card-label">DFS Research</div>
+      <div class="card-title">Research Hub</div>
+      <div class="card-desc">Player projections, odds, props, injuries, coordinator data, and scheme matchups in one place.</div>
+      <div class="card-arrow">→</div>
+    </a>
+  </div>
+</body>
+</html>
