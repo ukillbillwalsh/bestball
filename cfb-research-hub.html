@@ -279,7 +279,27 @@
     nav.tabs::-webkit-scrollbar{display:none}
     nav.tabs button{padding:11px 12px 9px;font-size:13px;flex-shrink:0}
     nav.tabs button .tg{display:none}
-    .mockbanner{padding:7px 14px;font-size:10px}
+  
+  /* ---------- sim optimizer additions ---------- */
+  .modechips{display:flex;gap:7px}
+  .mchip{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--muted);
+    font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:8px 6px;cursor:pointer;transition:.12s}
+  .mchip.on{background:rgba(255,90,31,.14);border-color:var(--accent);color:var(--accent)}
+  .dropzone{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:10px 12px;cursor:pointer;
+    display:flex;flex-direction:column;gap:2px;transition:.12s}
+  .dropzone:hover,.dropzone.over{border-color:var(--accent2)}
+  .dropzone b{font-family:var(--body);font-size:14px;color:var(--ink);font-weight:600}
+  .dropzone span{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .dropzone.loaded span{color:var(--green)}
+  .lbadges{display:flex;gap:6px;flex-wrap:wrap}
+  .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;padding:3px 8px;border-radius:6px;
+    background:var(--bg2);border:1px solid var(--line);color:var(--muted)}
+  .lb.hit{background:rgba(39,215,150,.10);border-color:rgba(39,215,150,.4);color:var(--green)}
+  .lp.bb{box-shadow:inset 3px 0 0 var(--green)}
+  .simnote{font-family:var(--mono);font-size:10.5px;color:var(--dim);line-height:1.6;margin-top:8px}
+  .ctrl.dis{opacity:.38;pointer-events:none}
+
+  .mockbanner{padding:7px 14px;font-size:10px}
     main{padding:14px 12px 60px}
     .toolbar{gap:7px}
     .search{width:100%;flex:1}
@@ -547,6 +567,33 @@
   }
   .footnote{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:20px;line-height:1.7}
   @media(max-width:900px){.optlayout{grid-template-columns:1fr}.lbody{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- Market tab ---- */
+.mkcard{background:var(--card,#141a22);border:1px solid var(--line,#232b36);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.mkhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.mkmatch{font-weight:700;font-size:15px}
+.mktime{color:var(--muted,#8b98a9);font-size:12px}
+.mkflag{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:999px;border:1px solid}
+.mkflag.steam{color:#ffb454;border-color:#ffb45455;background:#ffb45412}
+.mkflag.steamdn{color:#7fb5ff;border-color:#7fb5ff55;background:#7fb5ff12}
+.mkflag.split{color:#c792ea;border-color:#c792ea55;background:#c792ea12}
+.mkrows{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+@media(max-width:720px){.mkrows{grid-template-columns:1fr}}
+.mkline{display:flex;align-items:baseline;gap:8px;font-size:13.5px}
+.mklab{color:var(--muted,#8b98a9);font-size:11px;letter-spacing:.5px;min-width:52px}
+.mkmove{font-weight:700}
+.mkup{color:#69d58c}.mkdn{color:#ff7a7a}.mkflat{color:var(--muted,#8b98a9)}
+.mkarrow{font-size:12px}
+.mkimp{display:flex;gap:18px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line,#232b36);flex-wrap:wrap}
+.mkteam{display:flex;flex-direction:column;gap:2px;min-width:150px}
+.mktname{font-weight:700;font-size:13px}
+.mktt{font-size:13px}
+.mktrend{color:var(--muted,#8b98a9);font-size:11.5px}
+.mkverdict{margin-top:8px;font-size:12.5px;background:#ffffff08;border-radius:8px;padding:6px 10px}
+.mksortbar{display:flex;gap:8px;margin:2px 0 12px;align-items:center}
+.mksort{cursor:pointer;font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line,#232b36);color:var(--muted,#8b98a9)}
+.mksort.on{color:#fff;border-color:#4a9eff88;background:#4a9eff18}
+
 </style>
 </head>
 <body>
@@ -579,6 +626,7 @@
     <button data-view="cores">Cores<span class="tg">who the pros are playing</span></button>
     <button data-view="stats">Player Stats<span class="tg">QB · RB · WR profiles</span></button>
     <button data-view="props">Props<span class="tg">underdog · lines</span></button>
+    <button data-view="market">Market<span class="tg">line moves · steam · trends</span></button>
   </nav>
 </header>
 
@@ -691,37 +739,67 @@
   <section class="view" id="view-opt">
     <div class="optlayout">
       <div class="optpanel">
-        <h3>Build Settings</h3>
+        <h3>Sim Builder</h3>
         <div class="ctrl">
-          <label>Lineups to build</label>
-          <input type="range" id="numlu" min="1" max="6" value="3" oninput="document.getElementById('numluv').textContent=this.value">
-          <div class="slideval"><span id="numluv">3</span> lineups</div>
+          <label>Mode</label>
+          <div class="modechips">
+            <button class="mchip on" data-mode="blueprint">Winner Blueprint</button>
+            <button class="mchip" data-mode="custom">Custom</button>
+          </div>
         </div>
         <div class="ctrl">
-          <label>Stacking</label>
+          <label>Player pool</label>
+          <div class="dropzone" id="csvdrop">
+            <b>Drop a SaberSim DK export</b>
+            <span id="csvstat">using hub projections &middot; click to browse</span>
+            <input type="file" id="csvfile" accept=".csv" hidden>
+          </div>
+        </div>
+        <div class="ctrl">
+          <label>Lineups to build</label>
+          <input type="range" id="numlu" min="1" max="10" value="5" oninput="document.getElementById('numluv').textContent=this.value">
+          <div class="slideval"><span id="numluv">5</span> lineups</div>
+        </div>
+        <div class="ctrl">
+          <label>Sims</label>
+          <input type="range" id="numsim" min="1000" max="8000" step="500" value="3000" oninput="document.getElementById('numsimv').textContent=(+this.value).toLocaleString()">
+          <div class="slideval"><span id="numsimv">3,000</span> correlated sims</div>
+        </div>
+        <div class="ctrl" id="constructctrls">
+          <label>Construction (Custom mode)</label>
           <div class="toggle on" data-opt="stack"><span>QB + pass-catcher</span><div class="sw"></div></div>
-          <div class="toggle" data-opt="bringback"><span>Bring-back (opp)</span><div class="sw"></div></div>
-          <div class="toggle" data-opt="qb2"><span>Allow 2nd QB (SF)</span><div class="sw"></div></div>
+          <div class="toggle on" data-opt="double"><span>Allow QB+2 double stack</span><div class="sw"></div></div>
+          <div class="toggle on" data-opt="bringback"><span>Bring-back (opp)</span><div class="sw"></div></div>
+          <div class="toggle on" data-opt="qb2"><span>2nd QB in SUPER FLEX</span><div class="sw"></div></div>
         </div>
         <div class="ctrl">
           <label>Max salary remaining</label>
-          <input type="range" id="maxrem" min="0" max="2000" value="600" step="100" oninput="document.getElementById('maxremv').textContent='$'+this.value">
-          <div class="slideval">≤ <span id="maxremv">$600</span> left</div>
+          <input type="range" id="maxrem" min="0" max="6000" value="3000" step="250" oninput="document.getElementById('maxremv').textContent='$'+(+this.value).toLocaleString()">
+          <div class="slideval">&le; <span id="maxremv">$3,000</span> left</div>
         </div>
-        <button class="buildbtn" id="buildbtn">⚡ Build Lineups</button>
+        <div class="ctrl">
+          <label>Max lineup ownership</label>
+          <input type="range" id="maxown" min="120" max="400" value="320" step="10" oninput="document.getElementById('maxownv').textContent=this.value+'%'">
+          <div class="slideval">&le; <span id="maxownv">320%</span> total</div>
+        </div>
+        <button class="buildbtn" id="buildbtn">&#9889; Sim + Build</button>
         <div class="rules">
+          <b>Winner Blueprint</b> &middot; 2024-25 DK winners (400+ lineups)<br>
+          80% stacked &middot; QB+1 47% / QB+2 30%<br>
+          Bring-back 48% &middot; two-QB 98%<br>
+          Ownership moderate (~160-195% total)<br><br>
           <b>DK CFB Classic</b><br>
-          8 players · <b>$50,000</b> cap<br>
-          1 QB · 2 RB · 3 WR<br>
-          1 FLEX (RB/WR)<br>
-          1 SUPER FLEX (QB/RB/WR)<br>
-          Min <b>2 games</b> · no TE/DST
+          8 players &middot; <b>$50,000</b> cap<br>
+          1 QB &middot; 2 RB &middot; 3 WR &middot; FLEX &middot; SUPER FLEX<br>
+          Min <b>2 games</b> &middot; no TE/DST
         </div>
       </div>
       <div class="lineups" id="lineups">
         <div class="empty-opt">
           <div class="big">No lineups yet</div>
-          Set your rules and hit <b>Build Lineups</b>.<br>The solver respects the full CFB Classic construction.
+          The builder generates hundreds of blueprint-legal builds, runs correlated<br>
+          Monte Carlo sims on the pool, and keeps the highest-<b>ceiling</b> lineups &mdash;<br>
+          ranked by top-1% sim outcome, the way GPPs are actually won.
         </div>
       </div>
     </div>
@@ -843,6 +921,16 @@
     </div>
     <p class="footnote">Underdog pickem lines with hit-rate history from CFBD game logs. L5 / L10 count games where the player cleared today's line; L10 Avg colors green when the average sits above the line, red below. The bars chart the last 10 games against the line (green over, red under, oldest to newest). Matchup is the same 1-10 defense-vs-position grade as the Matchup Chart, joined for players on this week's slate. History spans the player's last two seasons until 2026 games accumulate.</p>
   </section>
+
+<section class="view" id="view-market">
+  <div class="mksortbar">
+    <span class="mksort on" data-s="total" onclick="setMkSort('total')">Sort: total moves</span>
+    <span class="mksort" data-s="spread" onclick="setMkSort('spread')">Sort: spread moves</span>
+    <span class="mktrend" id="mktupd" style="margin-left:auto"></span>
+  </div>
+  <div id="mktcards"></div>
+  <p class="footnote">Lines: DraftKings book preferred, consensus fallback · open → current from CFBD · STEAM = spread moved ≥2 or total ≥3 · implied team totals from spread + total · trends = season ATS / over-under vs closing lines · the market read flags when the money is against a side — "run and hide".</p>
+</section>
 </main>
 
 <script>
@@ -1594,121 +1682,334 @@ document.querySelectorAll('#levfilter .chip').forEach(c=>{
 });
 
 /* ---------------- optimizer ---------------- */
+/* Sim Builder: winner-blueprint construction + correlated Monte Carlo ranking.
+   Blueprint = 2024-25 DK winner studies (400+ winning lineups):
+   80% stacked, QB+1 47% / QB+2 30%, 48% bring-back, 98% two-QB,
+   moderate ownership (~160-195% total), ~94% of cap. */
 document.querySelectorAll('.toggle').forEach(t=>t.onclick=()=>t.classList.toggle('on'));
 const CAP=50000;
-function opt(name){return document.querySelector(`.toggle[data-opt="${name}"]`).classList.contains('on')}
+function opt(name){const el=document.querySelector(`.toggle[data-opt="${name}"]`);return el?el.classList.contains('on'):false}
 
-function buildOne(usedSig,settings){
-  // greedy-randomized construction + salary-aware repair, respecting CFB Classic rules
-  const qbs=pool.filter(p=>p.pos==='QB');
-  const rbs=pool.filter(p=>p.pos==='RB');
-  const wrs=pool.filter(p=>p.pos==='WR');
-  const jitter=a=>[...a].map(p=>({p,r:p.proj+(Math.random()*4-2)})).sort((x,y)=>y.r-x.r).map(o=>o.p);
-  const gsig=p=>p.g?.away+p.g?.home;
+/* --- mode chips --- */
+let simMode='blueprint';
+document.querySelectorAll('.mchip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('.mchip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');simMode=c.dataset.mode;
+  document.getElementById('constructctrls').classList.toggle('dis',simMode==='blueprint');
+});
+document.getElementById('constructctrls').classList.add('dis');
 
-  for(let attempt=0;attempt<300;attempt++){
-    const qb=jitter(qbs)[Math.floor(Math.random()*3)];
-    let chosen=[qb];
+/* --- normal helpers --- */
+function s_erf(x){const s=x<0?-1:1;x=Math.abs(x);
+  const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return s*y;}
+const s_Phi=z=>0.5*(1+s_erf(z/Math.SQRT2));
+function s_randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* --- piecewise-linear inverse CDF --- */
+function makeQ(ps,vs){
+  return u=>{
+    if(u<=ps[0])return vs[0];
+    if(u>=ps[ps.length-1])return vs[vs.length-1];
+    for(let i=1;i<ps.length;i++){
+      if(u<=ps[i]){const t=(u-ps[i-1])/(ps[i]-ps[i-1]);return vs[i-1]+t*(vs[i]-vs[i-1]);}
+    }
+    return vs[vs.length-1];
+  };
+}
+function knotsFromPercentiles(p25,p50,p75,p85,p95,p99){
+  const lo=Math.max(0,p25-1.35*(p50-p25));
+  const hi=p99+0.6*Math.max(0.5,p99-p95);
+  return makeQ([0.02,0.25,0.50,0.75,0.85,0.95,0.99,0.999],[lo,p25,p50,p75,p85,p95,p99,hi]);
+}
+function knotsFromProjCeil(floor,proj,ceil){
+  const f=(floor&&floor>0&&floor<proj)?floor:proj*0.55;
+  const c=(ceil&&ceil>proj)?ceil:proj*1.6;
+  const lo=Math.max(0,proj-2.2*(proj-f));
+  return makeQ([0.02,0.25,0.50,0.85,0.95,0.999],[lo,f,proj,c,c+0.6*(c-proj),c+1.3*(c-proj)]);
+}
+
+/* --- CSV parsing (SaberSim DK export) --- */
+function parseCSVText(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=ch; }
+    else if(ch==='"') inQ=true;
+    else if(ch===','){row.push(cur);cur='';}
+    else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+    else if(ch!=='\r') cur+=ch;
+  }
+  if(cur.length||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.length>1);
+}
+function csvToSimPool(text){
+  const rows=parseCSVText(text);
+  const H=rows[0].map(h=>h.trim());
+  const ix=n=>H.indexOf(n);
+  const I={name:ix('Name'),pos:ix('Pos'),team:ix('Team'),opp:ix('Opp'),sal:ix('Salary'),
+    proj:ix('dk_points'),myproj:ix('My Proj'),own:ix('Adj Own'),myown:ix('My Own'),std:ix('dk_std'),
+    p25:ix('dk_25_percentile'),p50:ix('dk_50_percentile'),p75:ix('dk_75_percentile'),
+    p85:ix('dk_85_percentile'),p95:ix('dk_95_percentile'),p99:ix('dk_99_percentile')};
+  if(I.name<0||I.sal<0||I.pos<0)return null;
+  const out=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r];
+    if((row[I.name]||'')==='Name')continue; // embedded repeat headers
+    const pos=(row[I.pos]||'').split('/')[0].trim();
+    if(pos!=='QB'&&pos!=='RB'&&pos!=='WR')continue;
+    const proj=+(row[I.proj])||+(row[I.myproj])||0;
+    if(proj<=0.5)continue;
+    const p25=+row[I.p25],p50=+row[I.p50],p75=+row[I.p75],p85=+row[I.p85],p95=+row[I.p95],p99=+row[I.p99];
+    const hasPct=[p25,p50,p75,p85,p95,p99].every(v=>isFinite(v)&&v>0);
+    const std=+(row[I.std])||proj*0.45;
+    out.push({id:out.length,name:row[I.name],pos,team:row[I.team],opp:row[I.opp],
+      sal:+row[I.sal],proj,own:+(row[I.own])||+(row[I.myown])||0,
+      q:hasPct?knotsFromPercentiles(p25,p50,p75,p85,p95,p99)
+              :knotsFromProjCeil(null,proj,proj+1.28*std)});
+  }
+  return out.length>=30?out:null;
+}
+
+/* --- pool source: uploaded CSV wins, else hub projections --- */
+let SIMCSV=null;
+function getSimPool(){
+  if(SIMCSV)return SIMCSV;
+  return pool.filter(p=>p.proj>0.5&&(p.pos==='QB'||p.pos==='RB'||p.pos==='WR'))
+    .map((p,i)=>({id:i,name:p.name,pos:p.pos,team:p.team,opp:p.opp,sal:p.sal,proj:p.proj,
+      own:p.own||0,q:knotsFromProjCeil(p.floor,p.proj,p.ceil)}));
+}
+const csvdrop=document.getElementById('csvdrop'),csvfile=document.getElementById('csvfile');
+function loadCSVFile(f){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const sp=csvToSimPool(rd.result);
+    const stat=document.getElementById('csvstat');
+    if(sp){SIMCSV=sp;csvdrop.classList.add('loaded');
+      const g=new Set(sp.map(p=>[p.team,p.opp].sort().join('@'))).size;
+      stat.textContent=f.name+' · '+sp.length+' projected · '+g+' games';}
+    else{stat.textContent='could not read that CSV — expected SaberSim DK columns';}
+  };
+  rd.readAsText(f);
+}
+csvdrop.onclick=()=>csvfile.click();
+csvfile.onchange=()=>{if(csvfile.files[0])loadCSVFile(csvfile.files[0])};
+['dragover','dragenter'].forEach(ev=>csvdrop.addEventListener(ev,e=>{e.preventDefault();csvdrop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>csvdrop.addEventListener(ev,e=>{e.preventDefault();csvdrop.classList.remove('over')}));
+csvdrop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadCSVFile(f)});
+
+/* --- correlated sims (game + team + individual factors) --- */
+const CORW={QB:{t:0.50,g:0.18},WR:{t:0.44,g:0.18},RB:{t:0.28,g:0.14}};
+function runSims(players,nSims){
+  const gameKey=p=>[p.team,p.opp].sort().join('@');
+  const games=[...new Set(players.map(gameKey))];
+  const teams=[...new Set(players.map(p=>p.team))];
+  const gIdx=Object.fromEntries(games.map((g,i)=>[g,i]));
+  const tIdx=Object.fromEntries(teams.map((t,i)=>[t,i]));
+  const sims=players.map(()=>new Float32Array(nSims));
+  const meta=players.map(p=>{
+    const w=CORW[p.pos];const wi=Math.sqrt(Math.max(0.05,1-w.t*w.t-w.g*w.g));
+    return {g:gIdx[gameKey(p)],t:tIdx[p.team],wt:w.t,wg:w.g,wi};
+  });
+  for(let s=0;s<nSims;s++){
+    const gz=games.map(()=>s_randn()),tz=teams.map(()=>s_randn());
+    for(let i=0;i<players.length;i++){
+      const m=meta[i];
+      const z=m.wt*tz[m.t]+m.wg*gz[m.g]+m.wi*s_randn();
+      sims[i][s]=players[i].q(s_Phi(z));
+    }
+  }
+  return sims;
+}
+
+/* --- candidate lineup generation --- */
+function genCandidates(simPool,settings,attempts){
+  const qbs=simPool.filter(p=>p.pos==='QB');
+  const rbs=simPool.filter(p=>p.pos==='RB');
+  const wrs=simPool.filter(p=>p.pos==='WR');
+  const gsig=p=>[p.team,p.opp].sort().join('@');
+  const jitter=(a,amt)=>[...a].map(p=>({p,r:p.proj+s_randn()*amt})).sort((x,y)=>y.r-x.r).map(o=>o.p);
+  const seen=new Set(),out=[];
+  for(let a=0;a<attempts;a++){
+    const qb=jitter(qbs,3.5)[Math.floor(Math.random()*Math.min(8,qbs.length))];
+    if(!qb)continue;
+    const chosen=[qb];
     const has=p=>chosen.includes(p);
-    const add=p=>{if(p&&!has(p)){chosen.push(p);return true;}return false;};
-
-    // primary stack: a pass-catcher from QB's team
-    if(settings.stack){const tw=jitter(wrs.filter(w=>w.team===qb.team));if(tw.length)add(tw[0]);}
-    // bring-back: opponent pass-catcher
-    if(settings.bringback){const ow=jitter(wrs.filter(w=>w.team===qb.opp));if(ow.length)add(ow[0]);}
-    // fill to 2 RB
-    for(const p of jitter(rbs)){if(chosen.filter(x=>x.pos==='RB').length>=2)break;add(p);}
-    // fill to 3 WR
-    for(const p of jitter(wrs)){if(chosen.filter(x=>x.pos==='WR').length>=3)break;add(p);}
-    // FLEX (RB/WR) -> reach 7
-    for(const p of jitter([...rbs,...wrs])){if(chosen.length>=7)break;add(p);}
-    // SUPER FLEX (QB/RB/WR) -> reach 8
-    const sfp=settings.qb2?jitter([...qbs.filter(x=>x!==qb),...rbs,...wrs]):jitter([...rbs,...wrs]);
-    for(const p of sfp){if(chosen.length>=8)break;add(p);}
+    const add=p=>{if(p&&!has(p)){chosen.push(p);return true}return false};
+    const catchers=t=>jitter([...wrs,...rbs.filter(()=>Math.random()<0.15)].filter(w=>w.team===t),2.5);
+    let stackN=0;
+    if(settings.stack){
+      const tw=catchers(qb.team);
+      if(tw.length){add(tw[0]);stackN=1;
+        if(tw.length>1&&Math.random()<settings.doubleP){add(tw[1]);stackN=2;}}
+    }
+    if(settings.bbP>0&&Math.random()<settings.bbP){
+      const ow=catchers(qb.opp);if(ow.length)add(ow[0]);
+    }
+    if(settings.qb2P>0&&Math.random()<settings.qb2P){
+      const q2=jitter(qbs.filter(x=>x!==qb),3.5);
+      const pick=q2[Math.floor(Math.random()*Math.min(6,q2.length))];
+      if(pick)add(pick);
+    }
+    for(const p of jitter(rbs,3)){if(chosen.filter(x=>x.pos==='RB').length>=2)break;add(p);}
+    for(const p of jitter(wrs,3)){if(chosen.filter(x=>x.pos==='WR').length>=3)break;add(p);}
+    for(const p of jitter([...rbs,...wrs],3)){if(chosen.length>=8)break;add(p);}
     if(chosen.length!==8)continue;
 
     let sal=chosen.reduce((s,p)=>s+p.sal,0);
-    const floor=CAP-settings.maxrem;
-    // repair over-cap: swap an expensive piece for a cheaper same-position option
+    const salFloor=CAP-settings.maxrem;
     let guard=0;
-    while(sal>CAP&&guard++<40){
+    while(sal>CAP&&guard++<60){
       const cands=chosen.filter(p=>p!==qb).sort((a,b)=>b.sal-a.sal);
       let done=false;
       for(const c of cands){
-        const repl=jitter(pool.filter(p=>p.pos===c.pos&&!has(p)&&p.sal<c.sal&&(p.pos!=='QB'||settings.qb2)));
+        const pool2=simPool.filter(p=>p.pos===c.pos&&!has(p)&&p.sal<c.sal);
+        const keepStack=c.team===qb.team&&chosen.filter(x=>x.team===qb.team&&x!==qb).length<=stackN;
+        const repl=jitter(keepStack?pool2.filter(p=>p.team===qb.team):pool2,2);
         if(repl.length){const r=repl[0];chosen[chosen.indexOf(c)]=r;sal+=r.sal-c.sal;done=true;break;}
       }
       if(!done)break;
     }
-    // repair under-floor: upgrade a cheap piece into the leftover cap room
     guard=0;
-    while(sal<floor&&guard++<40){
+    while(sal<salFloor&&guard++<60){
       const cands=chosen.filter(p=>p!==qb).sort((a,b)=>a.sal-b.sal);
       let done=false;
       for(const c of cands){
         const room=CAP-sal+c.sal;
-        const repl=jitter(pool.filter(p=>p.pos===c.pos&&!has(p)&&p.sal>c.sal&&p.sal<=room));
+        const repl=jitter(simPool.filter(p=>p.pos===c.pos&&!has(p)&&p.sal>c.sal&&p.sal<=room),2);
         if(repl.length){const r=repl[0];chosen[chosen.indexOf(c)]=r;sal+=r.sal-c.sal;done=true;break;}
       }
       if(!done)break;
     }
-    if(sal>CAP||sal<floor)continue;
+    if(sal>CAP||sal<salFloor)continue;
     if(new Set(chosen.map(gsig)).size<2)continue;
-
-    const rbList=chosen.filter(p=>p.pos==='RB');
-    const wrList=chosen.filter(p=>p.pos==='WR');
-    const qbExtra=chosen.filter(p=>p.pos==='QB'&&p!==qb);
-    if(rbList.length<2||wrList.length<3)continue;
-
-    const ordered=[{slot:'QB',pl:qb}];
-    ordered.push({slot:'RB',pl:rbList[0]},{slot:'RB',pl:rbList[1]});
-    ordered.push({slot:'WR',pl:wrList[0]},{slot:'WR',pl:wrList[1]},{slot:'WR',pl:wrList[2]});
-    // FLEX = leftover RB/WR (beyond 2RB/3WR); SUPER FLEX = remaining (QB if present)
-    let leftovers=[...rbList.slice(2),...wrList.slice(3),...qbExtra];
-    if(leftovers.length!==2)continue;
-    let sf=leftovers.find(p=>p.pos==='QB')||leftovers[1];
-    let flex=leftovers.find(p=>p!==sf);
-    if(flex.pos==='QB'){[flex,sf]=[sf,flex];}
-    ordered.push({slot:'FLEX',pl:flex},{slot:'SUPER FLEX',pl:sf});
-
-    const sig=ordered.map(o=>o.pl.id).sort().join('-');
-    if(usedSig.has(sig))continue;
-
-    const proj=ordered.reduce((s,o)=>s+o.pl.proj,0);
-    ordered.forEach(o=>{o.stacked=(o.pl.team===qb.team&&o.pl.pos!=='QB')});
-    return {ordered,sal,proj:+proj.toFixed(1),sig,games:new Set(chosen.map(gsig)).size};
+    const rbL=chosen.filter(p=>p.pos==='RB'),wrL=chosen.filter(p=>p.pos==='WR'),qbL=chosen.filter(p=>p.pos==='QB');
+    if(rbL.length<2||wrL.length<3||qbL.length<1||qbL.length>2)continue;
+    const ownSum=chosen.reduce((s,p)=>s+p.own,0);
+    if(settings.maxOwn&&ownSum>settings.maxOwn)continue;
+    const stackers=chosen.filter(p=>p.team===qb.team&&p!==qb).length;
+    if(settings.stack&&stackers<1)continue;
+    const sig=chosen.map(p=>p.id).sort((x,y)=>x-y).join('-');
+    if(seen.has(sig))continue;seen.add(sig);
+    out.push({players:chosen,qb,qb2:qbL.find(q=>q!==qb)||null,sal,ownSum,
+      stackers,bb:chosen.some(p=>p.team===qb.opp),games:new Set(chosen.map(gsig)).size,sig});
   }
-  return null;
+  return out;
 }
 
+/* --- score candidates on sims, rank by GPP ceiling --- */
+function rankCandidates(cands,simPool,nSims,topN,maxOverlap){
+  const used=new Set();cands.forEach(c=>c.players.forEach(p=>used.add(p.id)));
+  const idList=[...used];
+  const sub=idList.map(id=>simPool[id]);
+  const sims=runSims(sub,nSims);
+  const at={};idList.forEach((id,i)=>at[id]=i);
+  const tot=new Float32Array(nSims);
+  for(const c of cands){
+    tot.fill(0);
+    for(const p of c.players){const arr=sims[at[p.id]];for(let s=0;s<nSims;s++)tot[s]+=arr[s];}
+    const sorted=Array.from(tot).sort((a,b)=>a-b);
+    const q=f=>sorted[Math.min(nSims-1,Math.floor(f*nSims))];
+    const topK=Math.max(1,Math.floor(nSims*0.01));
+    let ceil=0;for(let i=nSims-topK;i<nSims;i++)ceil+=sorted[i];ceil/=topK;
+    c.med=q(0.5);c.p90=q(0.9);c.ceil=ceil;
+  }
+  cands.sort((a,b)=>b.ceil-a.ceil);
+  const picked=[];
+  for(const c of cands){
+    if(picked.length>=topN)break;
+    if(picked.some(p=>{const s=new Set(p.players.map(x=>x.id));
+      return c.players.filter(x=>s.has(x.id)).length>maxOverlap;}))continue;
+    picked.push(c);
+  }
+  return picked;
+}
+
+/* --- slot ordering + render --- */
+function orderLineup(l){
+  const rbL=l.players.filter(p=>p.pos==='RB');
+  const wrL=l.players.filter(p=>p.pos==='WR');
+  const ordered=[{slot:'QB',pl:l.qb},
+    {slot:'RB',pl:rbL[0]},{slot:'RB',pl:rbL[1]},
+    {slot:'WR',pl:wrL[0]},{slot:'WR',pl:wrL[1]},{slot:'WR',pl:wrL[2]}];
+  let leftovers=[...rbL.slice(2),...wrL.slice(3)];
+  if(l.qb2)leftovers.push(l.qb2);
+  let sf=leftovers.find(p=>p.pos==='QB')||leftovers[1]||leftovers[0];
+  let flex=leftovers.find(p=>p!==sf);
+  if(flex&&flex.pos==='QB'){const t=flex;flex=sf;sf=t;}
+  if(flex)ordered.push({slot:'FLEX',pl:flex});
+  if(sf)ordered.push({slot:'SUPER FLEX',pl:sf});
+  ordered.forEach(o=>{
+    o.stacked=o.pl.team===l.qb.team&&o.pl!==l.qb;
+    o.bb=o.pl.team===l.qb.opp;
+  });
+  return ordered;
+}
 document.getElementById('buildbtn').onclick=()=>{
-  const n=+document.getElementById('numlu').value;
-  const settings={stack:opt('stack'),bringback:opt('bringback'),qb2:opt('qb2'),maxrem:+document.getElementById('maxrem').value};
-  const used=new Set();const out=[];
-  let guard=0;
-  while(out.length<n&&guard<60){const l=buildOne(used,settings);guard++;if(l){used.add(l.sig);out.push(l);}}
-  if(!out.length){document.getElementById('lineups').innerHTML='<div class="empty-opt"><div class="big">No valid build</div>Loosen the salary-remaining or stacking rules and try again.</div>';return;}
-  document.getElementById('lineups').innerHTML=out.map((l,i)=>`
+  const btn=document.getElementById('buildbtn');
+  btn.textContent='Simming\u2026';btn.disabled=true;
+  setTimeout(()=>{
+    try{
+      const simPool=getSimPool();
+      if(!simPool||simPool.length<30){
+        document.getElementById('lineups').innerHTML='<div class="empty-opt"><div class="big">No pool</div>Load a slate CSV or wait for hub projections to load.</div>';return;
+      }
+      const n=+document.getElementById('numlu').value;
+      const nSims=+document.getElementById('numsim').value;
+      const maxrem=+document.getElementById('maxrem').value;
+      const maxOwn=+document.getElementById('maxown').value;
+      const settings=simMode==='blueprint'
+        ?{stack:true,doubleP:0.40,bbP:0.50,qb2P:0.97,maxrem,maxOwn}
+        :{stack:opt('stack'),doubleP:opt('double')?0.45:0,bbP:opt('bringback')?0.50:0,qb2P:opt('qb2')?0.97:0,maxrem,maxOwn};
+      const cands=genCandidates(simPool,settings,650);
+      if(!cands.length){
+        document.getElementById('lineups').innerHTML='<div class="empty-opt"><div class="big">No valid build</div>Loosen the salary or ownership caps and rebuild.</div>';return;
+      }
+      const top=rankCandidates(cands,simPool,nSims,n,5);
+      document.getElementById('lineups').innerHTML=top.map((l,i)=>{
+        const ordered=orderLineup(l);
+        const stackTag=l.stackers>=2?'QB+'+l.stackers+' STACK':l.stackers===1?'QB+1 STACK':'NAKED QB';
+        const ownIn=l.ownSum>=140&&l.ownSum<=220;
+        return `
     <div class="lineup">
       <div class="lhead">
         <div class="lno">Lineup <span>#${i+1}</span></div>
         <div class="lstats">
-          <span class="s proj">Proj <b>${l.proj}</b></span>
+          <span class="s proj">Ceiling <b>${l.ceil.toFixed(0)}</b></span>
+          <span class="s">90th <b>${l.p90.toFixed(0)}</b></span>
+          <span class="s">Median <b>${l.med.toFixed(0)}</b></span>
           <span class="s sal">Salary <b>$${l.sal.toLocaleString()}</b></span>
-          <span class="s">Left <b>$${(CAP-l.sal).toLocaleString()}</b></span>
-          <span class="s">Games <b>${l.games}</b></span>
+          <span class="s">Own <b>${l.ownSum.toFixed(0)}%</b></span>
+        </div>
+      </div>
+      <div style="padding:8px 16px;border-bottom:1px solid var(--line)">
+        <div class="lbadges">
+          <span class="lb ${l.stackers>=1?'hit':''}">${stackTag}</span>
+          <span class="lb ${l.qb2?'hit':''}">${l.qb2?'2 QB':'1 QB'}</span>
+          <span class="lb ${l.bb?'hit':''}">${l.bb?'BRING-BACK':'NO BRING-BACK'}</span>
+          <span class="lb ${ownIn?'hit':''}">OWN ${l.ownSum.toFixed(0)}%</span>
+          <span class="lb">${l.games} GAMES</span>
+          <span class="lb">$${(CAP-l.sal).toLocaleString()} LEFT</span>
         </div>
       </div>
       <div class="lbody">
-        ${l.ordered.map(o=>`
-          <div class="lp ${o.stacked?'stacked':''}">
+        ${ordered.map(o=>`
+          <div class="lp ${o.stacked?'stacked':''} ${o.bb?'bb':''}">
             <span class="slot">${o.slot}</span>
             <span class="nm">${o.pl.name}</span>
-            <span class="meta">${o.pl.team} · $${(o.pl.sal/1000).toFixed(1)}k · ${o.pl.proj.toFixed(1)}</span>
+            <span class="meta">${o.pl.team} \u00b7 $${(o.pl.sal/1000).toFixed(1)}k \u00b7 ${o.pl.proj.toFixed(1)} \u00b7 ${o.pl.own.toFixed(0)}%</span>
           </div>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;}).join('')+`
+      <p class="simnote">Ranked by <b>Ceiling</b> = average of each lineup's top-1% sim outcomes (correlated game/team/player sims${SIMCSV?' from the CSV\u2019s percentile curves':''}). Orange bar = QB stack partner, green bar = bring-back. Winner blueprint from the 2024-25 DK studies: 4 of 5 winners stacked their QB, 98% ran two QBs, ~half used a bring-back, ownership moderate not ultra-contrarian.</p>`;
+    } finally {
+      btn.textContent='\u26a1 Sim + Build';btn.disabled=false;
+    }
+  },30);
 };
+
 
 /* ---------------- stats tabs ---------------- */
 /* STATDATA is populated by the data loader */
@@ -2236,6 +2537,7 @@ async function loadData(){
   if(!proj){ proj = SAMPLE; }            // dev fallback so the file renders when opened directly
   applyData(proj, odds);
   applyProps(pr);
+  loadMarket();
 }
 
 // Re-pull live odds on the same cadence shown in the header (90s), without touching projections.
@@ -2245,9 +2547,93 @@ function startOddsRefresh(){
       const odds = await (await fetch(DATA_BASE+'odds.json',{cache:'no-store'})).json();
       const proj = await (await fetch(DATA_BASE+projFile(),{cache:'no-store'})).json();
       applyData(proj, odds);
+      loadMarket();
     }catch(e){/* keep last good render */}
   }, 90000);
 }
+
+
+/* ---------------- Market tab (line movement · steam · trends) ---------------- */
+const MARKET_SAMPLE = {"updated": "2026-09-26T06:15:00-05:00", "season": 2026, "thresholds": {"spreadSteam": 2.0, "totalSteam": 3.0, "booksSplit": 2.5}, "games": [{"away": "UGA", "home": "ALA", "time": "2026-09-26T19:30:00.000Z", "spread": {"open": -1.5, "cur": -4.5, "move": -3.0, "d1": -1.0, "fav": "ALA", "toward": "ALA"}, "total": {"open": 48.5, "cur": 52.5, "move": 4.0, "d1": 1.5}, "implied": {"UGA": {"open": 23.5, "cur": 24.0, "move": 0.5}, "ALA": {"open": 25.0, "cur": 28.5, "move": 3.5}}, "books": {"n": 6, "disagree": 1.0}, "flags": [{"k": "SPREAD STEAM", "team": "ALA", "amt": 3.0}, {"k": "TOTAL STEAM", "dir": "up", "amt": 4.0}]}, {"away": "TEX", "home": "OU", "time": "2026-09-26T15:30:00.000Z", "spread": {"open": -6.5, "cur": -3.5, "move": 3.0, "d1": 0.5, "fav": "OU", "toward": "TEX"}, "total": {"open": 61.5, "cur": 57.5, "move": -4.0, "d1": -2.0}, "implied": {"TEX": {"open": 27.5, "cur": 27.0, "move": -0.5}, "OU": {"open": 34.0, "cur": 30.5, "move": -3.5}}, "books": {"n": 5, "disagree": 3.0}, "flags": [{"k": "SPREAD STEAM", "team": "TEX", "amt": 3.0}, {"k": "TOTAL STEAM", "dir": "down", "amt": 4.0}, {"k": "BOOKS SPLIT", "amt": 3.0}]}, {"away": "ARMY", "home": "NAVY", "time": "2026-09-26T12:00:00.000Z", "spread": {"open": 2.5, "cur": 2.5, "move": 0.0, "d1": 0.0, "fav": "ARMY", "toward": null}, "total": {"open": 41.5, "cur": 42.5, "move": 1.0, "d1": 0.5}, "implied": {"ARMY": {"open": 22.0, "cur": 22.5, "move": 0.5}, "NAVY": {"open": 19.5, "cur": 20.0, "move": 0.5}}, "books": {"n": 4, "disagree": 0.5}, "flags": []}], "trends": {"UGA": {"ats": "3-1", "atsPct": 75, "ou": "2-2", "ouPct": 50, "covMargin": 4.2, "l5Ats": "W-W-L-W"}, "ALA": {"ats": "2-2", "atsPct": 50, "ou": "3-1", "ouPct": 75, "covMargin": -0.5, "l5Ats": "L-W-W-L"}, "TEX": {"ats": "4-0", "atsPct": 100, "ou": "1-3", "ouPct": 25, "covMargin": 7.8, "l5Ats": "W-W-W-W"}, "OU": {"ats": "1-3", "atsPct": 25, "ou": "2-2", "ouPct": 50, "covMargin": -5.1, "l5Ats": "L-L-W-L"}, "ARMY": {"ats": "3-1", "atsPct": 75, "ou": "0-4", "ouPct": 0, "covMargin": 3.0, "l5Ats": "W-L-W-W"}, "NAVY": {"ats": "2-2", "atsPct": 50, "ou": "1-3", "ouPct": 25, "covMargin": 0.8, "l5Ats": "W-L-L-W"}}};
+let MARKET=null, mkSort='total';
+async function loadMarket(){
+  try{ MARKET = await (await fetch(DATA_BASE+'market.json',{cache:'no-store'})).json(); }
+  catch(e){ MARKET = MARKET_SAMPLE; }
+  renderMarket();
+}
+function mkMoveTxt(m){ if(m===null||m===undefined) return ['—','mkflat'];
+  if(Math.abs(m)<0.05) return ['no move','mkflat'];
+  return [(m>0?'▲':'▼')+Math.abs(m).toFixed(1), m>0?'mkup':'mkdn']; }
+function mkSpreadTxt(g){ const s=g.spread; if(s.cur===null||s.cur===undefined) return '—';
+  const f=s.cur<0? g.home:g.away; const line=Math.abs(s.cur).toFixed(1);
+  const o=(s.open!==null&&s.open!==undefined)? (s.open<0? g.home:g.away)+' -'+Math.abs(s.open).toFixed(1) : '—';
+  return o+' → '+f+' -'+line; }
+function mkVerdict(g){
+  const bits=[];
+  if(g.spread.toward && g.spread.move!==null && Math.abs(g.spread.move)>=1)
+    bits.push('sharp side: '+g.spread.toward+' (spread moved '+Math.abs(g.spread.move).toFixed(1)+' toward them)');
+  const tm=g.total.move;
+  if(tm!==null && tm!==undefined && Math.abs(tm)>=2)
+    bits.push(tm>0? 'total climbing '+tm.toFixed(1)+' — environment improving'
+                  : 'total falling '+Math.abs(tm).toFixed(1)+' — scoring expectations down');
+  for(const [ab,imp] of Object.entries(g.implied||{})){
+    if(imp.move!==null && imp.move!==undefined && imp.move<=-3) bits.push(ab+' implied total down '+Math.abs(imp.move).toFixed(1)+' — market against them, caution');
+    if(imp.move!==null && imp.move!==undefined && imp.move>=3) bits.push(ab+' implied total up '+imp.move.toFixed(1)+' — market backing their offense');
+  }
+  if(g.books && g.books.disagree>=((MARKET&&MARKET.thresholds&&MARKET.thresholds.booksSplit)||2.5))
+    bits.push('books disagree by '+g.books.disagree.toFixed(1)+' — unsettled number');
+  return bits.length? 'Market read: '+bits.join(' · ') : 'Market read: quiet — no meaningful movement';
+}
+function mkTrendLine(ab){
+  const t=MARKET&&MARKET.trends? MARKET.trends[ab]:null; if(!t) return 'no trend data';
+  const parts=['ATS '+t.ats+' ('+t.atsPct+'%)','O/U '+t.ou];
+  if(t.covMargin!==null&&t.covMargin!==undefined) parts.push('cover '+(t.covMargin>0?'+':'')+t.covMargin.toFixed(1));
+  if(t.l5Ats) parts.push('L5 '+t.l5Ats);
+  return parts.join(' · ');
+}
+function renderMarket(){
+  const host=document.getElementById('mktcards'); if(!host) return;
+  if(!MARKET||!MARKET.games||!MARKET.games.length){
+    host.innerHTML='<div class="mkcard">No market data yet — lines post Sunday–Monday; fetch_market.py fills this on the 6 AM run.</div>';return;}
+  const upd=document.getElementById('mktupd');
+  if(upd) upd.textContent='updated '+(MARKET.updated||'').replace('T',' ').slice(0,16);
+  const games=[...MARKET.games];
+  games.sort((a,b)=> mkSort==='total'
+    ? Math.abs(b.total.move||0)-Math.abs(a.total.move||0)
+    : Math.abs(b.spread.move||0)-Math.abs(a.spread.move||0));
+  host.innerHTML=games.map(g=>{
+    const flags=(g.flags||[]).map(f=>{
+      if(f.k==='SPREAD STEAM') return '<span class="mkflag steam">STEAM → '+f.team+'</span>';
+      if(f.k==='TOTAL STEAM') return '<span class="mkflag '+(f.dir==='up'?'steam':'steamdn')+'">TOTAL '+(f.dir==='up'?'▲':'▼')+f.amt.toFixed(1)+'</span>';
+      return '<span class="mkflag split">BOOKS SPLIT '+f.amt.toFixed(1)+'</span>';}).join(' ');
+    const [smTxt,smCls]=mkMoveTxt(g.spread.move);
+    const [tmTxt,tmCls]=mkMoveTxt(g.total.move);
+    const d1=(g.total.d1!==null&&g.total.d1!==undefined&&Math.abs(g.total.d1)>=0.5)
+      ? ' <span class="mktrend">(24h '+(g.total.d1>0?'+':'')+g.total.d1.toFixed(1)+')</span>':'';
+    const imps=Object.entries(g.implied||{}).map(([ab,imp])=>{
+      const [t,c]=mkMoveTxt(imp.move);
+      return '<div class="mkteam"><span class="mktname">'+ab+'</span>'+
+        '<span class="mktt">implied '+(imp.cur!==null&&imp.cur!==undefined?imp.cur.toFixed(1):'—')+
+        ' <span class="'+c+' mkmove mkarrow">'+t+'</span></span>'+
+        '<span class="mktrend">'+mkTrendLine(ab)+'</span></div>';}).join('');
+    const time=g.time? new Date(g.time).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}):'';
+    return '<div class="mkcard">'+
+      '<div class="mkhead"><span class="mkmatch">'+g.away+' @ '+g.home+'</span>'+
+      '<span class="mktime">'+time+'</span>'+flags+'</div>'+
+      '<div class="mkrows">'+
+      '<div class="mkline"><span class="mklab">SPREAD</span><span>'+mkSpreadTxt(g)+'</span>'+
+      '<span class="mkmove '+smCls+'">'+smTxt+'</span></div>'+
+      '<div class="mkline"><span class="mklab">TOTAL</span><span>'+
+      (g.total.open!==null&&g.total.open!==undefined?g.total.open.toFixed(1):'—')+' → '+
+      (g.total.cur!==null&&g.total.cur!==undefined?g.total.cur.toFixed(1):'—')+'</span>'+
+      '<span class="mkmove '+tmCls+'">'+tmTxt+'</span>'+d1+'</div>'+
+      '</div><div class="mkimp">'+imps+'</div>'+
+      '<div class="mkverdict">'+mkVerdict(g)+'</div></div>';
+  }).join('');
+}
+function setMkSort(s){ mkSort=s;
+  document.querySelectorAll('.mksort').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+  renderMarket(); }
 
 // Data location — web uses relative paths; the native app overrides via window.HUB_DATA_BASE
 const DATA_BASE = (typeof window!=='undefined' && window.HUB_DATA_BASE) || './';
