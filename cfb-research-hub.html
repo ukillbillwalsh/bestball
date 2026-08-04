@@ -1221,11 +1221,9 @@ let CORES=[], CORES_UPDATED='';
    credentials:'include'. Your backend decides read (all) vs write (pros).
 ========================================================================= */
 const CORES_API = {
-  endpoint: '',            // e.g. 'https://your-rps-backend.replit.app/api/cores'
+  endpoint: '/api/cores',
   sport:    'cfb',
-  // set true once your backend tells the hub whether the viewer may write;
-  // until then the builder shows for ?admin=1 as a manual override.
-  useSessionRole: true,
+  useSessionRole: false,  // canWrite returned by server; false = everyone can submit
 };
 let CORES_CANWRITE = false;   // set by the backend response when useSessionRole
 

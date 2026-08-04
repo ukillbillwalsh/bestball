@@ -1,0 +1,12 @@
+{
+  "name": "cfb-tools",
+  "version": "1.0.0",
+  "description": "CFB DFS & Best Ball tools",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
