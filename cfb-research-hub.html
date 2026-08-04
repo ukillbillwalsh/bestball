@@ -1307,7 +1307,7 @@ function coreBuilderHTML(){
   return `<div class="cb-wrap">
     <div class="cb-row">
       <input class="cb-inp" id="cb-name" placeholder="your name" style="width:150px">
-      <input class="cb-inp" id="cb-slate" placeholder="slate (e.g. DK Main)" style="width:150px">
+      <select class="cb-inp" id="cb-slate" style="width:170px">${SLATES.length?SLATES.map(s=>`<option value="${s.label}"${s.id===SLATE_ID?' selected':''}>${s.label}</option>`).join(''):'<option value="">No slates loaded</option>'}</select>
     </div>
     <div class="cb-row">${slots}</div>
     <datalist id="cb-players">${pool.slice().filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.name}">`).join('')}</datalist>
