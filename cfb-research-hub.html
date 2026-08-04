@@ -461,8 +461,12 @@
   .core-empty{padding:52px 20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px}
   .cb-wrap{background:var(--panel,#111827);border:1px solid rgba(129,149,179,.2);border-radius:12px;padding:16px;margin-bottom:16px}
   .cb-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
-  .cb-slot{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(129,149,179,.18);border-radius:8px;min-width:180px;background:rgba(0,0,0,.15)}
+  .cb-slot{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(129,149,179,.18);border-radius:8px;min-width:180px;background:rgba(0,0,0,.15);transition:.15s}
+  .cb-slot.matched{border-color:rgba(39,215,150,.35);background:rgba(39,215,150,.05)}
   .cb-slot .p{font-family:var(--mono);font-size:10px;color:var(--muted);width:30px}
+  .cb-preview{display:flex;align-items:center;gap:5px;margin-left:4px;flex-shrink:0}
+  .cb-preview img{width:18px;height:18px;object-fit:contain}
+  .cb-preview .pos{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px}
   .cb-inp{background:#0b0f17;border:1px solid rgba(129,149,179,.25);border-radius:7px;color:#e8edf7;font-family:var(--mono);font-size:12px;padding:6px 9px}
   .cb-btn{background:var(--accent2,#41d67c);color:#04120a;border:none;border-radius:8px;font-family:var(--disp);font-weight:800;font-size:12px;padding:8px 14px;cursor:pointer}
   .cb-out{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:pre-wrap;word-break:break-all;background:#0b0f17;border-radius:8px;padding:11px;max-height:180px;overflow:auto;margin-top:10px}
@@ -1262,8 +1266,25 @@ const CORE_SLOTS=5; // default; overridden per-slate by slotsForSlate()
 function slotsForSlate(label){ return /\bfd\b/i.test(label||'') ? 4 : 5; }
 function buildSlotInputs(n){
   return Array.from({length:n},(_,i)=>
-    `<div class="cb-slot"><span class="p">P${i+1}</span><input class="cb-inp cb-player" list="cb-players" data-i="${i}" placeholder="player name" style="flex:1"></div>`
+    `<div class="cb-slot" id="cb-slot-${i}"><span class="p">P${i+1}</span><input class="cb-inp cb-player" list="cb-players" data-i="${i}" placeholder="player name" style="flex:1"><span class="cb-preview" id="cb-prev-${i}"></span></div>`
   ).join('');
+}
+function updateSlotPreview(i){
+  const inp=document.querySelector(`.cb-player[data-i="${i}"]`);
+  const prev=document.getElementById('cb-prev-'+i);
+  const slot=document.getElementById('cb-slot-'+i);
+  if(!inp||!prev||!slot) return;
+  const p=poolByName(inp.value);
+  if(p){
+    const posColors={QB:'rgba(61,139,255,.18)','QB-c':'#3d8bff',RB:'rgba(39,215,150,.15)','RB-c':'#27d796',WR:'rgba(157,107,255,.16)','WR-c':'#9d6bff',TE:'rgba(255,176,31,.16)','TE-c':'#ffb01f'};
+    const bg=posColors[p.pos]||'rgba(129,149,179,.15)', cl=posColors[p.pos+'-c']||'#8195b3';
+    const logo=LOGOS[p.team]?`<img src="${LOGOS[p.team]}" alt="${p.team}" onerror="this.remove()">`:'';
+    prev.innerHTML=`${logo}<span class="pos" style="background:${bg};color:${cl}">${p.pos}</span>`;
+    slot.classList.add('matched');
+  } else {
+    prev.innerHTML='';
+    slot.classList.remove('matched');
+  }
 }
 const AV_COLORS=['#6c5ce7','#00b894','#0984e3','#e17055','#e84393','#fdcb6e','#00cec9','#d63031','#a29bfe'];
 function avColor(name){let h=0;for(const c of (name||'')) h=(h*31+c.charCodeAt(0))>>>0;return AV_COLORS[h%AV_COLORS.length];}
@@ -1338,7 +1359,16 @@ function wireBuilder(){
     const n=slotsForSlate(slateEl.value);
     const sd=document.getElementById('cb-slots'); if(sd) sd.innerHTML=buildSlotInputs(n);
     const sc=document.getElementById('cb-slotcount'); if(sc) sc.textContent=n+' players';
+    wirePreviews();
   };}
+  wirePreviews();
+}
+function wirePreviews(){
+  document.querySelectorAll('.cb-player').forEach(inp=>{
+    if(inp._pw) return; inp._pw=1;
+    inp.addEventListener('input',()=>updateSlotPreview(+inp.dataset.i));
+    inp.addEventListener('change',()=>updateSlotPreview(+inp.dataset.i));
+  });
   const add=document.getElementById('cb-add'); if(!add||add._w) return; add._w=1;
   add.onclick=()=>{
     const name=(document.getElementById('cb-name').value||'').trim();
