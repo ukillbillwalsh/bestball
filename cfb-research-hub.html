@@ -1225,7 +1225,7 @@ let CORES=[], CORES_UPDATED='';
 const CORES_API = {
   endpoint: '/api/cores',
   sport:    'cfb',
-  useSessionRole: false,  // canWrite returned by server; false = everyone can submit
+  useSessionRole: true,   // server returns canWrite:true for everyone
 };
 let CORES_CANWRITE = false;   // set by the backend response when useSessionRole
 
