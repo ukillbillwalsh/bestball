@@ -1,7 +1,25 @@
 {
- "as_of": "2026-08-02T11:10:12",
+ "as_of": "2026-08-03T21:32:11",
  "source": "RotoWire",
  "items": [
+  {
+   "player": "Gabe Burkle",
+   "pos": "",
+   "team": "Penn State",
+   "injury": "Knee",
+   "date": "August 3, 2026",
+   "headline": "Probable for season opener",
+   "in_pool": true
+  },
+  {
+   "player": "Brett Eskildsen",
+   "pos": "",
+   "team": "Penn State",
+   "injury": "Shoulder",
+   "date": "August 3, 2026",
+   "headline": "Nearly ready to go for fall camp",
+   "in_pool": true
+  },
   {
    "player": "Roderick Tezeno Jr.",
    "pos": "",
