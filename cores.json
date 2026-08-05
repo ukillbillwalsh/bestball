@@ -1,4 +1,26 @@
 {
-  "updated": "",
-  "cores": []
+  "updated": "2026-08-04T03:38:34.817Z",
+  "cores": [
+    {
+      "name": "BRUCE",
+      "slate": "FD Main",
+      "players": [
+        "Akim Lanieux",
+        "CJ Donaldson",
+        "Creed Whittemore",
+        "Darian Mensah"
+      ]
+    },
+    {
+      "name": "BRUCE DK",
+      "slate": "Main",
+      "players": [
+        "Aaron Anderson",
+        "Aaron Davis",
+        "Aaron Enterline",
+        "Aaron Philo",
+        "Anthony Gangi Jr."
+      ]
+    }
+  ]
 }
