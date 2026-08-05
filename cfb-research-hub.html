@@ -601,6 +601,16 @@
 .mksort{cursor:pointer;font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line,#232b36);color:var(--muted,#8b98a9)}
 .mksort.on{color:#fff;border-color:#4a9eff88;background:#4a9eff18}
 
+
+/* ---- Matchups boom environment (coordinator DNA) ---- */
+.gtag.boomhot{color:#ff5a1f;border-color:rgba(255,90,31,.45);font-weight:700}
+.gtag.boomwarm{color:#ffb454;border-color:rgba(255,180,84,.4)}
+.gtag.boomcool{color:var(--muted)}
+.gtag.boomcold{color:#7fb5ff;border-color:rgba(127,181,255,.35)}
+.gx-carry{color:var(--muted);font-style:normal;font-size:10px}
+.gx-boomhead{border-top:1px dashed rgba(255,255,255,.08);margin-top:4px;padding-top:6px}
+.gx-boomn{color:#ff5a1f}
+
 </style>
 </head>
 <body>
@@ -1178,7 +1188,7 @@ function toggleGx(i){
 }
 function gxMatchup(away,home){
   const a=TEAMSTATS[away], h=TEAMSTATS[home];
-  if(!a&&!h) return `<div class="gx-row"><span class="gx-na">advanced stats pending</span></div>`;
+  if(!a&&!h) return `<div class="gx-row"><span class="gx-na">advanced stats pending</span></div>`+boomLines(away,home);
   // one line per offense: that unit's SP+ rank vs the defense it faces,
   // with the edge going to whichever unit is ranked better
   const line=(offAb,off,defAb,def)=>{
@@ -1209,8 +1219,56 @@ function gxMatchup(away,home){
       ${pa?`<span class="gx-stat">${away} <b>${pa}</b></span>`:''}
       ${ph?`<span class="gx-stat">${home} <b>${ph}</b></span>`:''}
     </div>`:'';
-  return line(away,a,home,h)+line(home,h,away,a)+passLine;
+  return line(away,a,home,h)+line(home,h,away,a)+passLine+boomLines(away,home);
 }
+
+/* ---- Boom environment: coordinator-attributed explosiveness + pace ----
+   Off explosiveness 55% (most important) + opp D explosiveness allowed 30%
+   + pace 15%.  2025 identities: a MOVED OC/DC carries his prior school's
+   numbers (ocCarry/dcCarry from enrich_coordinators.py); returning staff use
+   their own team's 2025 data. */
+const BOOM_W={off:0.55,def:0.30,pace:0.15};
+function coordEnv(ab){
+  const c=(typeof aliasGet==='function')?aliasGet(COORD,ab):(COORD&&COORD[ab]);
+  if(!c) return null;
+  const oc=(c.ocStatus==='new'&&c.ocCarry)?c.ocCarry:null;
+  const off=(oc&&oc.offExplPct!=null)?{pct:oc.offExplPct,src:oc.school}
+          :(c.offExplPct!=null?{pct:c.offExplPct,src:null}:null);
+  const pace=(oc&&oc.pacePct!=null)?{pct:oc.pacePct,src:oc.school}
+          :(c.pacePct!=null?{pct:c.pacePct,src:null}:null);
+  const dcc=(c.dcStatus==='new'&&c.dcCarry&&c.dcCarry.defExplAllowedPct!=null)?c.dcCarry:null;
+  const defAllowed=dcc?{pct:dcc.defExplAllowedPct,src:dcc.school}
+          :(c.defExplAllowedPct!=null?{pct:c.defExplAllowedPct,src:null}:null);
+  return {off,pace,defAllowed};
+}
+function boomOf(away,home){
+  const A=coordEnv(away),H=coordEnv(home);
+  if(!A||!H||!A.off||!H.off) return null;
+  const v=x=>x?x.pct:50;
+  const side=(o,dOpp,p)=>BOOM_W.off*o.pct+BOOM_W.def*v(dOpp)+BOOM_W.pace*v(p);
+  return Math.round((side(A.off,H.defAllowed,A.pace)+side(H.off,A.defAllowed,H.pace))/2);
+}
+function boomChip(away,home){
+  const b=boomOf(away,home);
+  if(b==null) return '';
+  const cls=b>=70?'boomhot':b>=55?'boomwarm':b<=35?'boomcold':'boomcool';
+  const lbl=b>=70?'BOOM ':'';
+  return `<span class="gtag ${cls}" title="Coordinator boom score ${b}/100: offensive explosiveness ${Math.round(BOOM_W.off*100)}% + opp D explosiveness allowed ${Math.round(BOOM_W.def*100)}% + pace ${Math.round(BOOM_W.pace*100)}% (2025 identity, carried when a coordinator changed schools)">\u26a1 ${lbl}${b}</span>`;
+}
+function boomLines(away,home){
+  const rows=[[away,home],[home,away]].map(([o,d])=>{
+    const O=coordEnv(o),D=coordEnv(d);
+    if(!O||!O.off) return '';
+    const bits=[`expl <b>${O.off.pct}</b>${O.off.src?` <i class="gx-carry">carries ${O.off.src}</i>`:''}`];
+    if(D&&D.defAllowed) bits.push(`vs D allows <b>${D.defAllowed.pct}</b>${D.defAllowed.src?` <i class="gx-carry">DC ex-${D.defAllowed.src}</i>`:''}`);
+    if(O.pace) bits.push(`pace <b>${O.pace.pct}</b>`);
+    return `<div class="gx-row"><span class="gx-team">${logoImg(o)}${o} O</span><span class="gx-stat">${bits.join(' \u00b7 ')}</span></div>`;
+  }).join('');
+  if(!rows) return '';
+  const b=boomOf(away,home);
+  return `<div class="gx-row gx-boomhead"><span class="gx-stat">Boom environment${b!=null?` <b class="gx-boomn">\u26a1 ${b}</b>`:''} <i class="gx-carry">FBS pcts \u00b7 2025 coordinator identity</i></span></div>`+rows;
+}
+
 let CORES=[], CORES_UPDATED='';
 /* ================= CORES BACKEND CONFIG =================================
    Your RPS Replit backend handles storage + auth. Fill these in and the
@@ -1699,6 +1757,7 @@ function renderGames(){
       </div>
       <div class="gfoot">
         ${g.pace!=null?`<span class="gtag pace">≈${g.pace} plays/tm</span>`:`<span class="gtag">LINES PENDING</span>`}
+        ${boomChip(g.away,g.home)}
         ${shoot?'<span class="gtag" style="color:var(--accent);border-color:rgba(255,90,31,.35)">SHOOTOUT</span>':''}
         ${hasLines?(qb2?'<span class="gtag qb2">2-QB VIABLE</span>':'<span class="gtag">1-QB GAME</span>'):''}
       </div>
