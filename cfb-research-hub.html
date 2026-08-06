@@ -611,6 +611,15 @@
 .gx-boomhead{border-top:1px dashed rgba(255,255,255,.08);margin-top:4px;padding-top:6px}
 .gx-boomn{color:#ff5a1f}
 
+
+/* ---- gunslinger / explosive tags + CB matchup line ---- */
+.u-gun{color:#ff8a3d;border-color:rgba(255,138,61,.45)}
+.u-expl{color:#4dd6c1;border-color:rgba(77,214,193,.45)}
+.cbline{font-size:10.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.cbline b.cb-good{color:#ff6b5e}
+.cbline b.cb-bad{color:#41d67c}
+.cbline b.cb-mid{color:var(--muted)}
+
 </style>
 </head>
 <body>
@@ -969,17 +978,76 @@ let LINES = {};        // {abbr:{ol,dl}} line yards: OL created / DL conceded pe
 const TEAMCOLOR={QB:"--blue",RB:"--green",WR:"--purple"};
 
 /* usage signal: position-aware tag + bar */
-function usageMeta(pos,u){
-  if(pos==='QB') return u>15?{tag:'DUAL-THREAT',cls:'u-dual',label:u+'% rush'}:{tag:'POCKET',cls:'u-pocket',label:u+'% rush'};
+
+/* ---- stat-table lookups (ADOT / BIG TIME / YPRR / SLOT%) ---- */
+function statColIdx(pos,names){
+  const t=STATDATA[pos]; if(!t||!t.cols) return -1;
+  for(const n of names){
+    const i=t.cols.findIndex(c=>String(c).trim().toUpperCase()===n);
+    if(i>=0) return i;
+  }
+  return -1;
+}
+function statRowOf(pos,name){
+  const t=STATDATA[pos]; if(!t||!t.rows||!t.rows.length) return null;
+  if(!t.__nidx){
+    const ni=statColIdx(pos,['NAME']);
+    t.__nidx=new Map();
+    if(ni>=0) t.rows.forEach(r=>t.__nidx.set(String(r[ni]||'').trim().toLowerCase(),r));
+  }
+  return t.__nidx.get(String(name||'').trim().toLowerCase())||null;
+}
+function statNum(pos,name,colNames){
+  const r=statRowOf(pos,name); if(!r) return null;
+  const ci=statColIdx(pos,colNames); if(ci<0) return null;
+  const v=r[ci];
+  return (typeof v==='number'&&isFinite(v))?v:null;
+}
+/* GUNSLINGER: downfield risk-taker. ADOT >= 9.5 (slate median 8.6) confirmed
+   by team PROE >= 55th pct (throws more than expected) OR PFF big-time throw
+   rate >= 4.5 (slate median 4.2). Dual-threat takes precedence. */
+const GUN={adot:9.5,bigTime:4.5,proePct:55};
+function isGunslinger(p){
+  const adot=statNum('QB',p.name,['ADOT']);
+  if(adot==null||adot<GUN.adot) return false;
+  const bt=statNum('QB',p.name,['BIG TIME']);
+  const c=(typeof aliasGet==='function')?aliasGet(COORD,p.team):(COORD&&COORD[p.team]);
+  const proe=c?c.proePct:null;
+  return (proe!=null&&proe>=GUN.proePct)||(bt!=null&&bt>=GUN.bigTime);
+}
+/* EXPLOSIVE WR: below-WR1 usage but elite per-route juice or deep role.
+   YPRR >= 2.2 (85th pct 2.5) or ADOT >= 13.5 (75th pct 12.8). */
+const XWR={yprr:2.2,adot:13.5};
+function explosiveWRWhy(p){
+  const y=(p.expl!=null&&isFinite(p.expl))?p.expl:statNum('WR',p.name,['YPRR']);
+  if(y!=null&&y>=XWR.yprr) return y.toFixed(2)+' YPRR';
+  const a=statNum('WR',p.name,['ADOT']);
+  if(a!=null&&a>=XWR.adot) return a.toFixed(1)+' aDOT';
+  return null;
+}
+
+function usageMeta(pos,u,p){
+  if(pos==='QB'){
+    if(u>15) return {tag:'DUAL-THREAT',cls:'u-dual',label:u+'% rush'};
+    if(p&&isGunslinger(p)){
+      const adot=statNum('QB',p.name,['ADOT']);
+      return {tag:'GUNSLINGER',cls:'u-gun',label:(adot!=null?adot.toFixed(1)+' aDOT':'downfield')};
+    }
+    return {tag:'POCKET',cls:'u-pocket',label:u+'% rush'};
+  }
   if(pos==='RB'){
     const t=u>40?'ALPHA':u>=10?'COMMITTEE':'BACKUP';
     const c=u>40?'u-bell':u>=10?'u-comm':'u-back';
     return {tag:t,cls:c,label:u+'% carries'};
   }
   // WR
-  const t=u>=26?'ALPHA':u>=20?'WR1':'SECONDARY';
-  const c=u>=26?'u-alpha':u>=20?'u-wr1':'u-sec';
-  return {tag:t,cls:c,label:u+'% targets'};
+  if(u>=26) return {tag:'ALPHA',cls:'u-alpha',label:u+'% targets'};
+  if(u>=20) return {tag:'WR1',cls:'u-wr1',label:u+'% targets'};
+  if(p){
+    const why=explosiveWRWhy(p);
+    if(why) return {tag:'EXPLOSIVE',cls:'u-expl',label:why};
+  }
+  return {tag:'SECONDARY',cls:'u-sec',label:u+'% targets'};
 }
 
 /* ---------------- build player objects (rebuilt whenever data loads) ---------------- */
@@ -1059,7 +1127,7 @@ function renderProj(){
     </tr>`).join('');
 }
 function usageCell(p){
-  const m=usageMeta(p.pos,p.usage);
+  const m=usageMeta(p.pos,p.usage,p);
   const w=Math.round(p.usage/80*44);
   return `<div class="usage"><span class="utag ${m.cls}">${m.tag}</span>`+
     `<span class="ubar-track"><span class="ubar-fill ${m.cls}" style="width:${w}px"></span></span>`+
@@ -2412,6 +2480,37 @@ function mcCls(s){
   return 'mc-avoid';
 }
 const MC_DETAIL_LABEL={QB:'Cmp% Allowed', RB:'OL vs DL Line Yds', WR:'Catch% Allowed'};
+
+/* ---- WR vs CB matchup (scheme.json defense[opp].cbs from build_cb_layer.py)
+   Slot mapping: WR SLOT% >= 55 -> slot CB; <= 35 -> top outside CB; between ->
+   rotates (shows both). Grades: LOWER cover grade = better WR spot (green). */
+function cbGradeCls(g){ return g==null?'cb-mid':(g>=75?'cb-good':(g<=62?'cb-bad':'cb-mid')); }
+function cbInfo(p){
+  if(p.pos!=='WR'||!p.mopp) return null;
+  const dmap=(typeof SCHEME!=='undefined'&&SCHEME&&SCHEME.defense)?SCHEME.defense:null;
+  if(!dmap) return null;
+  const d=(typeof aliasGet==='function')?aliasGet(dmap,p.mopp):dmap[p.mopp];
+  const cbs=d&&d.cbs; if(!cbs) return null;
+  const slotPct=statNum('WR',p.name,['SLOT%']);
+  const out=(cbs.outside||[]).filter(Boolean);
+  let primary=null, mode='';
+  if(cbs.mode==='aligned'&&slotPct!=null&&slotPct>=55&&cbs.slot){ primary=cbs.slot; mode='SLOT'; }
+  else if(cbs.mode==='aligned'&&slotPct!=null&&slotPct<=35&&out[0]){ primary=out[0]; mode='OUT'; }
+  else if(out[0]){ primary=out[0]; mode=(cbs.mode==='aligned'?'ROT':'CB1'); }
+  else if(cbs.slot){ primary=cbs.slot; mode='SLOT'; }
+  if(!primary) return null;
+  const all=[];
+  out.forEach((c,i)=>all.push(`CB${i+1} ${c.player} (cov ${c.cov!=null?c.cov.toFixed(1):'—'}, ${c.snaps} snaps)`));
+  if(cbs.slot) all.push(`SLOT ${cbs.slot.player} (cov ${cbs.slot.cov!=null?cbs.slot.cov.toFixed(1):'—'}, ${cbs.slot.snaps} snaps)`);
+  const slotTxt=slotPct!=null?` · you: ${slotPct.toFixed(0)}% slot`:'';
+  return {primary,mode,title:`${p.mopp} CB room: ${all.join(' · ')}${slotTxt}`};
+}
+function cbLine(p){
+  const c=cbInfo(p); if(!c) return '';
+  const g=c.primary.cov;
+  return `<div class="cbline" title="${c.title.replace(/"/g,'&quot;')}">vs ${c.mode} ${c.primary.player} <b class="${cbGradeCls(g)}">${g!=null?g.toFixed(1):''}</b></div>`;
+}
+
 function renderMChart(){
   const body=document.getElementById('mcbody');
   if(!body) return;
@@ -2459,7 +2558,7 @@ function renderMChart(){
   }
   body.innerHTML=rows.map(p=>`
     <tr>
-      <td class="l">${schemeCell(p)}</td>
+      <td class="l">${schemeCell(p)}${cbLine(p)}</td>
       <td class="num" style="color:var(--muted)">${p.pos}</td>
       <td class="num" style="color:var(--muted)">${p.team}</td>
       <td class="num">${p.mopp?`<span style="display:inline-flex;align-items:center;gap:5px">${logoImg(p.mopp)}${p.mopp}</span>`:'—'}</td>
