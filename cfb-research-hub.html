@@ -2493,22 +2493,25 @@ function cbInfo(p){
   const cbs=d&&d.cbs; if(!cbs) return null;
   const slotPct=statNum('WR',p.name,['SLOT%']);
   const out=(cbs.outside||[]).filter(Boolean);
-  let primary=null, mode='';
+  let primary=null, mode='', duo=null;
   if(cbs.mode==='aligned'&&slotPct!=null&&slotPct>=55&&cbs.slot){ primary=cbs.slot; mode='SLOT'; }
-  else if(cbs.mode==='aligned'&&slotPct!=null&&slotPct<=35&&out[0]){ primary=out[0]; mode='OUT'; }
-  else if(out[0]){ primary=out[0]; mode=(cbs.mode==='aligned'?'ROT':'CB1'); }
+  else if(cbs.mode==='aligned'&&slotPct!=null&&slotPct<=35&&out[0]){ primary=out[0]; mode='OUT'; duo=out.slice(0,2); }
+  else if(out[0]){ primary=out[0]; mode=(cbs.mode==='aligned'?'ROT':'CB1'); if(cbs.mode==='aligned') duo=out.slice(0,2); }
   else if(cbs.slot){ primary=cbs.slot; mode='SLOT'; }
   if(!primary) return null;
   const all=[];
   out.forEach((c,i)=>all.push(`CB${i+1} ${c.player} (cov ${c.cov!=null?c.cov.toFixed(1):'—'}, ${c.snaps} snaps)`));
   if(cbs.slot) all.push(`SLOT ${cbs.slot.player} (cov ${cbs.slot.cov!=null?cbs.slot.cov.toFixed(1):'—'}, ${cbs.slot.snaps} snaps)`);
   const slotTxt=slotPct!=null?` · you: ${slotPct.toFixed(0)}% slot`:'';
-  return {primary,mode,title:`${p.mopp} CB room: ${all.join(' · ')}${slotTxt}`};
+  return {primary,mode,duo,title:`${p.mopp} CB room: ${all.join(' · ')}${slotTxt}`};
 }
 function cbLine(p){
   const c=cbInfo(p); if(!c) return '';
-  const g=c.primary.cov;
-  return `<div class="cbline" title="${c.title.replace(/"/g,'&quot;')}">vs ${c.mode} ${c.primary.player} <b class="${cbGradeCls(g)}">${g!=null?g.toFixed(1):''}</b></div>`;
+  // Outside WRs face BOTH starting outside corners (PFF exports don't tell us
+  // left vs right, and WR sides aren't set) - so OUT/ROT rows list the pair.
+  const one=cb=>`${cb.player} <b class="${cbGradeCls(cb.cov)}">${cb.cov!=null?cb.cov.toFixed(1):''}</b>`;
+  const who=(c.duo&&c.duo.length>1)?c.duo.map(one).join(' · '):one(c.primary);
+  return `<div class="cbline" title="${c.title.replace(/"/g,'&quot;')}">vs ${c.mode} ${who}</div>`;
 }
 
 function renderMChart(){
